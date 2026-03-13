@@ -1,0 +1,20 @@
+<svg width="256" height="256" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#818CF8">
+
+    <!-- F vertical spine -->
+    <polygon points="20,20 60,20 60,180 20,160"></polygon>
+
+    <!-- F top block -->
+    <polygon points="60,20 140,20 120,60 60,60"></polygon>
+
+    <!-- F middle block -->
+    <polygon points="60,80 120,80 100,120 60,120"></polygon>
+
+    <!-- L vertical -->
+    <polygon points="140,40 180,10 180,190 140,160"></polygon>
+
+    <!-- L bottom -->
+    <polygon points="100,140 180,140 170,180 100,180"></polygon>
+
+  </g>
+</svg>
