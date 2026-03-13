@@ -16,7 +16,7 @@ def run_local_training(train_path, test_path, output_model_path):
         y_test = df_test.iloc[:, -1]
         
         # Evaluate Global Model
-        global_model_path = os.path.join(os.getcwd(), 'models', 'global_model.pkl')
+        global_model_path = os.path.join(os.getcwd(), 'models', 'main_model.pkl')
         if os.path.exists(global_model_path):
             global_model = joblib.load(global_model_path)
             g_preds = global_model.predict(X_test)

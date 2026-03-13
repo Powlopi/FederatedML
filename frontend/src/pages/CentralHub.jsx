@@ -25,7 +25,6 @@ const CentralHub = () => {
         const res = await axios.get("http://localhost:5000/api/status");
         setModelStatus(res.data.models_present);
 
-        // Also check campus status for image 9 badge
         const ports = { campus1: 5001, campus2: 5002 };
         for (const [key, port] of Object.entries(ports)) {
           try {
@@ -40,7 +39,7 @@ const CentralHub = () => {
       }
     };
     fetchData();
-  }, [loading]); // Reload whenever an action finishes
+  }, [loading]);
 
   // 2. Action: Retrieve Local Model (PULL)
   const retrieveLocalModel = async (campusId) => {
