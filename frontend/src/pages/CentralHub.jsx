@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+// Make sure these paths are correct for your project structure
 import { Icons } from "../components/Icons";
 import StatusBadge from "../components/StatusBadge";
 import AppLayout from "../components/AppLayout";
 
 const CentralHub = () => {
-  const [modelStatus, setModelStatus] = useState({
-    campus1: false,
-    campus2: false,
-    global: false,
-  });
-  const [loading, setLoading] = useState(false);
+  // SPLIT LOADING STATES
+  const [loading1, setLoading1] = useState(false);
+  const [loading2, setLoading2] = useState(false);
+  const [isAggregating, setIsAggregating] = useState(false);
+
   const [retrievalStatus, setRetrievalStatus] = useState("");
   const [aggregationLogs, setAggregationLogs] = useState([]);
   const [statuses, setStatuses] = useState({
@@ -18,13 +18,21 @@ const CentralHub = () => {
     campus2: "Checking...",
   });
 
-  // 1. Initial State Load: Which models are present?
+  // Track session clicks
+  const [retrievedCampus1, setRetrievedCampus1] = useState(false);
+  const [retrievedCampus2, setRetrievedCampus2] = useState(false);
+
+  // NEW: Track what the Hub already has saved on the hard drive
+  const [hubModelsPresent, setHubModelsPresent] = useState({
+    campus1: false,
+    campus2: false,
+  });
+
+  // 1. Initial State Load
   useEffect(() => {
     const fetchData = async () => {
+      // A. Check Campus Nodes Status
       try {
-        const res = await axios.get("http://localhost:5000/api/status");
-        setModelStatus(res.data.models_present);
-
         const ports = { campus1: 5001, campus2: 5002 };
         for (const [key, port] of Object.entries(ports)) {
           try {
@@ -37,14 +45,30 @@ const CentralHub = () => {
       } catch (err) {
         setRetrievalStatus("Error fetching network status.");
       }
+
+      // B. NEW: Check Hub Status for existing files
+      try {
+        const hubRes = await axios.get("http://localhost:5000/api/status");
+        if (hubRes.data && hubRes.data.models_present) {
+          setHubModelsPresent({
+            campus1: hubRes.data.models_present.campus1,
+            campus2: hubRes.data.models_present.campus2,
+          });
+        }
+      } catch (err) {
+        console.error("Could not reach Hub for status check.");
+      }
     };
+
     fetchData();
-  }, [loading]);
+  }, []);
 
   // 2. Action: Retrieve Local Model (PULL)
   const retrieveLocalModel = async (campusId) => {
-    setLoading(true);
+    if (campusId === "1") setLoading1(true);
+    if (campusId === "2") setLoading2(true);
     setRetrievalStatus("");
+
     try {
       const res = await axios.get(
         `http://localhost:5000/api/retrieve_local_model/${campusId}`,
@@ -53,6 +77,8 @@ const CentralHub = () => {
         setRetrievalStatus(
           `Success: Hospital ${campusId} model retrieved and saved locally on the central hub.`,
         );
+        if (campusId === "1") setRetrievedCampus1(true);
+        if (campusId === "2") setRetrievedCampus2(true);
       } else {
         setRetrievalStatus(`Error: ${res.data.message}`);
       }
@@ -61,12 +87,14 @@ const CentralHub = () => {
         `Network Error pulling model for Hospital ${campusId}: ${err.message}`,
       );
     }
-    setLoading(false);
+
+    if (campusId === "1") setLoading1(false);
+    if (campusId === "2") setLoading2(false);
   };
 
   // 3. Action: Trigger Federated Averaging
   const performAggregation = async () => {
-    setLoading(true);
+    setIsAggregating(true);
     setAggregationLogs([]);
     setRetrievalStatus("");
     setAggregationLogs([
@@ -76,7 +104,6 @@ const CentralHub = () => {
     try {
       const res = await axios.get("http://localhost:5000/api/aggregate_models");
 
-      // Demo delay for presentation
       setTimeout(() => {
         setAggregationLogs((prev) => [
           ...prev,
@@ -89,22 +116,25 @@ const CentralHub = () => {
           ...prev,
           `[SUCCESS] ${res.data.message}`,
         ]);
-        setLoading(false);
+        setIsAggregating(false);
       }, 2500);
     } catch (err) {
       setAggregationLogs((prev) => [
         ...prev,
         `[ERROR] Aggregation Failed: ${err.message}`,
       ]);
-      setLoading(false);
+      setIsAggregating(false);
     }
   };
 
-  const isReadyForFedAvg = modelStatus.campus1 && modelStatus.campus2;
+  // THE FIX: Check if we clicked the button OR if the hub already sees the files!
+  const hasModel1 = retrievedCampus1 || hubModelsPresent.campus1;
+  const hasModel2 = retrievedCampus2 || hubModelsPresent.campus2;
+  const isReadyForFedAvg = hasModel1 && hasModel2;
 
   return (
     <div className="animate-in fade-in duration-500 max-w-6xl mx-auto space-y-12">
-      {/* HEADER AND RETRIEVAL SECTION (Matches top of image 9) */}
+      {/* HEADER AND RETRIEVAL SECTION */}
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-100">
           Central Aggregation Hub
@@ -122,10 +152,10 @@ const CentralHub = () => {
             <StatusBadge status={statuses.campus1} />
             <button
               onClick={() => retrieveLocalModel("1")}
-              disabled={loading}
+              disabled={loading1}
               className="bg-rose-600/90 text-white font-semibold py-3 px-8 rounded-xl disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? "Pulling..." : "Retrieve Model - Hospital 1"}
+              {loading1 ? "Pulling..." : "Retrieve Model - Hospital 1"}
             </button>
           </div>
 
@@ -136,10 +166,10 @@ const CentralHub = () => {
             <StatusBadge status={statuses.campus2} />
             <button
               onClick={() => retrieveLocalModel("2")}
-              disabled={loading}
+              disabled={loading2}
               className="bg-rose-600/90 text-white font-semibold py-3 px-8 rounded-xl disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? "Pulling..." : "Retrieve Model - Hospital 2"}
+              {loading2 ? "Pulling..." : "Retrieve Model - Hospital 2"}
             </button>
           </div>
         </div>
@@ -152,7 +182,7 @@ const CentralHub = () => {
         )}
       </div>
 
-      {/* STORAGE STATUS TABLE (Matches middle of image 9) */}
+      {/* STORAGE STATUS TABLE */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-gray-200">
           Local Model Storage Status
@@ -181,13 +211,13 @@ const CentralHub = () => {
                   node: "Hospital 1",
                   status: statuses.campus1,
                   file: "local_model_campus1.pkl",
-                  isStored: modelStatus.campus1,
+                  isStored: hasModel1, // Smart variable!
                 },
                 {
                   node: "Hospital 2",
                   status: statuses.campus2,
                   file: "local_model_campus2.pkl",
-                  isStored: modelStatus.campus2,
+                  isStored: hasModel2, // Smart variable!
                 },
               ].map((row, idx) => (
                 <tr
@@ -203,7 +233,9 @@ const CentralHub = () => {
                   <td className="px-6 py-4 font-mono text-gray-300">
                     {row.file}
                   </td>
-                  <td className="px-6 py-4 font-medium text-rose-300">
+                  <td
+                    className={`px-6 py-4 font-medium ${row.isStored ? "text-emerald-400" : "text-rose-300"}`}
+                  >
                     {row.isStored ? "Yes" : "No"}
                   </td>
                 </tr>
@@ -213,7 +245,7 @@ const CentralHub = () => {
         </div>
       </div>
 
-      {/* AGGREGATION SECTION (Matches bottom of image 9) */}
+      {/* AGGREGATION SECTION */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-gray-200">
           Federated Averaging (FedAvg)
@@ -226,10 +258,12 @@ const CentralHub = () => {
             </p>
             <button
               onClick={performAggregation}
-              disabled={loading}
+              disabled={isAggregating}
               className="bg-rose-600 hover:bg-rose-500 text-white font-semibold py-3 px-8 rounded-xl disabled:opacity-50 transition-colors flex items-center gap-2"
             >
-              {loading ? "Aggregating Trees..." : "Perform Federated Averaging"}
+              {isAggregating
+                ? "Aggregating Trees..."
+                : "Perform Federated Averaging"}
             </button>
           </div>
         ) : (
@@ -245,7 +279,7 @@ const CentralHub = () => {
             {aggregationLogs.map((log, i) => (
               <div
                 key={i}
-                className={`mb-2 ${log.includes("[ERROR]") ? "text-rose-400" : ""} ${log.includes("[SUCCESS]") ? "text-rose-400 font-bold" : ""}`}
+                className={`mb-2 ${log.includes("[ERROR]") ? "text-rose-400" : ""} ${log.includes("[SUCCESS]") ? "text-emerald-400 font-bold" : ""}`}
               >
                 {log}
               </div>

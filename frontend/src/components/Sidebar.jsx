@@ -13,7 +13,8 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-full md:w-72 bg-gray-950 border-b md:border-b-0 md:border-r border-gray-800 flex flex-col z-20">
+    // ADDED: sticky top-0 h-screen
+    <aside className="sticky top-0 h-screen w-full md:w-72 bg-gray-950 border-b md:border-b-0 md:border-r border-gray-800 flex flex-col z-20">
       <div className="p-6 md:p-8 flex items-center gap-3 border-b border-gray-800/50">
         <div className="w-10 h-8 rounded-lg bg-linear-to-br shadow-lg flex items-center justify-center">
           <img src="/logo.svg" alt="logo" className="w-10 h-10" />

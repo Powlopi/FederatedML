@@ -12,77 +12,118 @@ const CampusPage = ({
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
 
-  // --- ACTION: RETRIEVE GLOBAL MODEL ---
-  const retrieveGlobalModelFromHub = async () => {
-    setLoading(true);
+  // --- Helper to add logs cleanly ---
+  const addLog = (message) => {
     setLogs((prev) => [
       ...prev,
-      `[${new Date().toLocaleTimeString()}] >> Communicating with Central aggregation server...`,
+      `[${new Date().toLocaleTimeString()}] ${message}`,
     ]);
+  };
+
+  // --- ACTION 1: RETRIEVE GLOBAL MODEL ---
+  const retrieveGlobalModelFromHub = async () => {
+    setLoading(true);
+    addLog(">> Communicating with Central aggregation server...");
     try {
       const res = await axios.get(
         `http://localhost:${port}/api/retrieve_global_model`,
       );
-      setLogs((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] >> Global model parameter download initiated.`,
-      ]);
+      addLog(">> Global model parameter download initiated.");
 
       setTimeout(() => {
-        setLogs((prev) => [...prev, `[SUCCESS] ${res.data.message}`]);
+        addLog(`[SUCCESS] ${res.data.message}`);
         setLoading(false);
       }, 1500);
     } catch (err) {
       const actualError = err.response?.data?.message || err.message;
-      setLogs((prev) => [...prev, `[ERROR] Sync Failed: ${actualError}`]);
+      addLog(`[ERROR] Sync Failed: ${actualError}`);
       setLoading(false);
     }
   };
 
-  // --- ACTION: TRAIN LOCAL MODEL ---
-  const trainModel = async () => {
+  // --- SAFETY HELPER: Only formats if the number actually exists ---
+  const formatMetric = (val) => {
+    if (val === undefined || val === null) return undefined;
+    const num = parseFloat(val);
+    if (isNaN(num)) return val;
+    return num <= 1 ? (num * 100).toFixed(2) + "%" : num + "%";
+  };
+
+  // --- ACTION 2: RUN INITIAL TEST (EVALUATE MODEL) ---
+  const runTest = async (sampleSize) => {
     setLoading(true);
-    setMetrics(null);
-    setLogs([
-      `[${new Date().toLocaleTimeString()}] >> Retrieving Main Global Model...`,
-    ]);
+    addLog(`>> Requesting evaluation with ${sampleSize} test samples...`);
 
     try {
-      const res = await axios.post(`http://localhost:${port}/api/train`);
+      const res = await axios.post(`http://localhost:${port}/api/evaluate`, {
+        sample_size: sampleSize,
+      });
 
-      // We use timeouts here to simulate a realistic sequence
-      setTimeout(() => {
-        setLogs((prev) => [
-          ...prev,
-          `[${new Date().toLocaleTimeString()}] >> Main model evaluated on local test data (n=${res.data.test_size}).`,
-        ]);
-      }, 1000);
+      // Extract Global
+      const g_acc = res.data.global_metrics?.accuracy || res.data.accuracy;
+      const g_f1 = res.data.global_metrics?.f1 || res.data.f1;
 
-      setTimeout(() => {
-        setLogs((prev) => [
-          ...prev,
-          `[${new Date().toLocaleTimeString()}] >> Initializing local training on ${res.data.train_size} records...`,
-        ]);
-      }, 2500);
+      // Extract Local (just in case your Evaluate route returns both!)
+      const l_acc = res.data.local_metrics?.accuracy;
+      const l_f1 = res.data.local_metrics?.f1;
 
-      setTimeout(() => {
-        setLogs((prev) => [
-          ...prev,
-          `[${new Date().toLocaleTimeString()}] >> Local model trained and evaluated.`,
-        ]);
-      }, 4000);
+      addLog(`[SUCCESS] Evaluation complete.`);
 
-      setTimeout(() => {
-        setLogs((prev) => [...prev, `[SUCCESS] ${res.data.message}`]);
-        setMetrics(res.data); // Show the metrics!
-        setLoading(false);
-      }, 5000);
+      setMetrics((prev) => ({
+        ...(prev || {}),
+        // Update global
+        global_metrics: g_acc
+          ? {
+              accuracy: formatMetric(g_acc),
+              f1: formatMetric(g_f1),
+            }
+          : prev?.global_metrics,
+
+        // Update local ONLY if the evaluate route actually provided it
+        ...(l_acc && {
+          local_metrics: {
+            accuracy: formatMetric(l_acc),
+            f1: formatMetric(l_f1),
+          },
+        }),
+        test_size: sampleSize,
+      }));
     } catch (err) {
-      // This forces React to read the Python error message
       const actualError = err.response?.data?.message || err.message;
-      setLogs((prev) => [...prev, `[ERROR] Execution Failed: ${actualError}`]);
-      setLoading(false);
+      addLog(`[ERROR] Evaluation failed: ${actualError}`);
     }
+    setLoading(false);
+  };
+
+  /// --- ACTION 3: RETRAIN LOCAL MODEL ---
+  const handleRetrain = async () => {
+    setLoading(true);
+    addLog(`>> Initiating retraining sequence with Campus-${id} local data...`);
+
+    try {
+      const res = await axios.post(`http://localhost:${port}/api/retrain`);
+
+      // Extract Local metrics matching your Python jsonify structure
+      const l_acc = res.data.local_metrics?.accuracy;
+      const l_f1 = res.data.local_metrics?.f1;
+
+      addLog(`[SUCCESS] ${res.data.message || "Retraining complete."}`);
+
+      setMetrics((prev) => ({
+        ...(prev || {}),
+        // THE FIX: Check if it's strictly not undefined, so 0 doesn't break it!
+        ...(l_acc !== undefined && {
+          local_metrics: {
+            accuracy: formatMetric(l_acc),
+            f1: formatMetric(l_f1),
+          },
+        }),
+      }));
+    } catch (err) {
+      const actualError = err.response?.data?.message || err.message;
+      addLog(`[ERROR] Retraining failed: ${actualError}`);
+    }
+    setLoading(false);
   };
 
   return (
@@ -99,37 +140,18 @@ const CampusPage = ({
               Isolated Execution Environment • LOCAL:{port}
             </p>
           </div>
-          <button
-            onClick={trainModel}
-            disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-lg flex items-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
-              ></path>
-            </svg>
-            {loading ? "Processing Sequence..." : "Start Node Sequence"}
-          </button>
+          {/* Start Sequence button removed from here! */}
         </div>
 
-        {/* NEW: SYNCHRONIZATION SECTION */}
-        <div className="flex flex-col md:flex-row items-center justify-between bg-[#0a1120] border border-gray-800/80 rounded-xl p-5 shadow-inner mb-8 gap-4">
+        {/* SYNCHRONIZATION SECTION */}
+        <div className="flex flex-col md:flex-row items-center justify-between bg-[#0a1120] border border-gray-800/80 rounded-xl p-5 shadow-inner mb-6 gap-4">
           <div>
             <h3 className="text-gray-200 font-semibold mb-1">
               Model Synchronization
             </h3>
             <p className="text-gray-500 text-sm">
               Download the latest aggregated global model from the central
-              server before beginning local training.
+              server.
             </p>
           </div>
           <button
@@ -137,26 +159,54 @@ const CampusPage = ({
             disabled={loading}
             className="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-6 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              ></path>
-            </svg>
             {loading ? "Syncing..." : "Retrieve Global Model"}
           </button>
         </div>
 
+        {/* NEW: EXECUTION CONTROLS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Evaluate Controls */}
+          <div className="bg-[#0a1120] border border-gray-800/80 rounded-xl p-5 shadow-inner">
+            <h3 className="text-gray-200 font-semibold border-b border-gray-800 pb-2 mb-3">
+              1. Evaluate Global Model
+            </h3>
+            <p className="text-gray-500 text-xs mb-4">
+              Select test sample size to evaluate current model performance.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[25, 50, 100].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => runTest(size)}
+                  disabled={loading}
+                  className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 text-sm py-2 px-3 rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {size} Samples
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Retrain Controls */}
+          <div className="bg-[#0a1120] border border-gray-800/80 rounded-xl p-5 shadow-inner">
+            <h3 className="text-gray-200 font-semibold border-b border-gray-800 pb-2 mb-3">
+              2. Local Retraining
+            </h3>
+            <p className="text-gray-500 text-xs mb-4">
+              Trigger local training loop using new Campus-{id} patient data.
+            </p>
+            <button
+              onClick={handleRetrain}
+              disabled={loading}
+              className="w-full bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 font-medium py-2 px-4 rounded-lg disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Processing..." : `Retrain with Campus-${id} Data`}
+            </button>
+          </div>
+        </div>
+
         {/* METRICS & INFO CARDS SECTION */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Card 1: Static Architecture */}
           <div className="bg-[#0a1120] border border-gray-800/80 rounded-xl p-5 shadow-inner">
             <h3 className="text-gray-400 text-xs font-bold tracking-widest uppercase mb-4 border-b border-gray-800 pb-2">
               Configuration
@@ -172,12 +222,13 @@ const CampusPage = ({
               </li>
               <li className="flex justify-between">
                 <span className="text-gray-500">Test Samples</span>
-                <span className="font-mono text-blue-400">50</span>
+                <span className="font-mono text-blue-400">
+                  {metrics?.test_size || "--"}
+                </span>
               </li>
             </ul>
           </div>
 
-          {/* Card 2: Dynamic Evaluation Metrics */}
           <div className="bg-[#0a1120] border border-gray-800/80 rounded-xl p-5 shadow-inner">
             <h3 className="text-gray-400 text-xs font-bold tracking-widest uppercase mb-4 border-b border-gray-800 pb-2 flex justify-between">
               <span>Evaluation Results</span>
@@ -190,37 +241,37 @@ const CampusPage = ({
               )}
             </h3>
 
-            {metrics ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-800 text-center">
-                  <div className="text-gray-500 text-[10px] uppercase mb-1">
-                    Global Model
-                  </div>
-                  <div className="text-amber-400 font-mono text-lg">
-                    {metrics.global_metrics.accuracy}
-                  </div>
-                  <div className="text-gray-600 text-[10px] mt-1">
-                    F1: {metrics.global_metrics.f1}
-                  </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-800 text-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-1 h-full bg-indigo-500"></div>
+                <div className="text-gray-500 text-[10px] uppercase mb-1">
+                  Global Model
                 </div>
-                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-800 text-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500"></div>
-                  <div className="text-gray-500 text-[10px] uppercase mb-1">
-                    Local Model
-                  </div>
-                  <div className="text-emerald-400 font-mono text-lg">
-                    {metrics.local_metrics.accuracy}
-                  </div>
-                  <div className="text-gray-600 text-[10px] mt-1">
-                    F1: {metrics.local_metrics.f1}
-                  </div>
+                <div className="text-indigo-400 font-mono text-lg">
+                  {metrics?.global_metrics
+                    ? metrics.global_metrics.accuracy
+                    : "--"}
+                </div>
+                <div className="text-gray-600 text-[10px] mt-1">
+                  F1:{" "}
+                  {metrics?.global_metrics ? metrics.global_metrics.f1 : "--"}
                 </div>
               </div>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-600 text-sm italic py-4">
-                Execute sequence to view model comparison.
+              <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-800 text-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-1 h-full bg-rose-500"></div>
+                <div className="text-gray-500 text-[10px] uppercase mb-1">
+                  Local Model
+                </div>
+                <div className="text-rose-400 font-mono text-lg">
+                  {metrics?.local_metrics
+                    ? metrics.local_metrics.accuracy
+                    : "--"}
+                </div>
+                <div className="text-gray-600 text-[10px] mt-1">
+                  F1: {metrics?.local_metrics ? metrics.local_metrics.f1 : "--"}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
