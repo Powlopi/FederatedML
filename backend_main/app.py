@@ -3,6 +3,10 @@ from flask_cors import CORS
 from aggregation_logic import create_aggregated_model
 import os
 import requests
+import pandas as pd
+import pickle
+from sklearn.metrics import accuracy_score, f1_score
+import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -51,7 +55,6 @@ def retrieve_local_model(campus_id):
         response = requests.get(campus_url)
         
         if response.status_code == 200:
-            # Save the file stream locally
             with open(local_save_path, 'wb') as f:
                 f.write(response.content)
             return jsonify({"status": "success", "message": f"Successfully retrieved local model for Campus {campus_id} and saved on central server."}), 200
@@ -64,7 +67,6 @@ def retrieve_local_model(campus_id):
 @app.route('/api/download_global_model', methods=['GET'])
 def download_global_model():
     try:
-        # We use the exact filename from your successful aggregation!
         model_path = os.path.join(os.getcwd(),'models', 'main_model_v2.pkl') 
         
         if not os.path.exists(model_path):
@@ -79,21 +81,68 @@ def download_global_model():
 # --- FEDERATED AVERAGING ROUTE ---
 @app.route('/api/aggregate_models', methods=['GET'])
 def aggregate_models():
-    """
-    Triggers the Federated Averaging algorithm to combine local models.
-    """
-    # Check if we are ready
     if not (os.path.exists(LOCAL_MODEL_1_PATH) and os.path.exists(LOCAL_MODEL_2_PATH)):
         return jsonify({"status": "error", "message": "Federated Averaging is NOT ready. Both Campus 1 and Campus 2 models must be retrieved first."}), 400
 
     result = create_aggregated_model(LOCAL_MODEL_1_PATH, LOCAL_MODEL_2_PATH, GLOBAL_MODEL_PATH)
     
     if result["status"] == "success":
-        # At this stage, we would save the new metrics to EvaluationResults.json.
         return jsonify(result), 200
     else:
         return jsonify(result), 500
+    
+    # --- GLOBAL METRICS ROUTE ---
+@app.route('/api/global_metrics', methods=['GET'])
+def get_global_metrics():
+    if not os.path.exists(GLOBAL_MODEL_PATH):
+        return jsonify({"status": "error", "message": "Global model not found."}), 404
+
+    test_data_path = os.path.join(os.getcwd(), 'global_test.csv') 
+
+    if not os.path.exists(test_data_path):
+        print("WARNING: global_test.csv not found in Hub directory!")
+        return jsonify({
+            "status": "success",
+            "version": "RFC v2.0",
+            "accuracy": "--",
+            "f1": "--",
+            "message": "No test data found."
+        })
+
+    try:
+        # Load the model
+        import joblib
+        model = joblib.load(GLOBAL_MODEL_PATH)
+
+        # Load the central test data
+        import pandas as pd
+        df = pd.read_csv(test_data_path)
+        
+        # Split features and target
+        X_test = df.iloc[:, :-1]
+        y_test = df.iloc[:, -1]
+
+        # Predict and score
+        from sklearn.metrics import accuracy_score, f1_score
+        predictions = model.predict(X_test)
+        acc = accuracy_score(y_test, predictions)
+        f1 = f1_score(y_test, predictions)
+
+        timestamp = os.path.getmtime(GLOBAL_MODEL_PATH)
+        dt_object = datetime.datetime.fromtimestamp(timestamp)
+        formatted_time = dt_object.strftime("%B %d, %Y • %I:%M %p")
+
+        return jsonify({
+            "status": "success",
+            "version": "RFC v2.0", 
+            "accuracy": acc,
+            "f1": f1,
+            "last_sync": formatted_time
+        })
+        
+    except Exception as e:
+        print(f"Error calculating metrics: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    # Aggregation Hub runs on port 5000
     app.run(port=5000, debug=True)

@@ -41,7 +41,7 @@ def get_status():
 @app.route('/api/download_model', methods=['GET'])
 def download_model():
     # Central Hub expects this exact file name without the version tag
-    filename = 'local_model_campus1.pkl' 
+    filename = 'local_model_campus2.pkl' 
     return send_from_directory(MODELS_DIR, filename, as_attachment=True)
 
 @app.route('/api/retrieve_global_model', methods=['GET'])
@@ -145,4 +145,4 @@ def train_model():
         return jsonify(result), 500
 
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)
+    app.run(port=5002, debug=True)
