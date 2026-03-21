@@ -1,8 +1,0 @@
-Flask
-Flask-Cors
-pandas
-scikit-learn
-requests
-joblib
-flwr
-gunicorn
