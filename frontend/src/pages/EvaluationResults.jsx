@@ -11,7 +11,9 @@ const EvaluationResults = () => {
     const fetchMetrics = async () => {
       try {
         setIsLoading(true);
-        const res = await axios.get("http://localhost:5000/api/metrics");
+        const res = await axios.get(
+          "http://main-hub-production-38c4.up.railway.app/api/metrics",
+        );
         setMetricsData(res.data);
         setError(null);
       } catch (err) {

@@ -31,22 +31,28 @@ const CentralHub = () => {
     const fetchData = async () => {
       // A. Check Campus Nodes Status
       try {
-        const ports = { campus1: 5001, campus2: 5002 };
-        for (const [key, port] of Object.entries(ports)) {
+        const campusUrls = {
+          campus1: "https://campus-1-production.up.railway.app",
+          campus2: "https://campus-2-production.up.railway.app",
+        };
+
+        for (const [key, url] of Object.entries(campusUrls)) {
           try {
-            await axios.get(`http://127.0.0.1:${port}/api/status`);
+            await axios.get(`${url}/api/status`);
             setStatuses((prev) => ({ ...prev, [key]: "Online" }));
-          } catch {
+          } catch (err) {
+            console.error(`Could not reach ${key}:`, err);
             setStatuses((prev) => ({ ...prev, [key]: "Offline" }));
           }
         }
       } catch (err) {
         setRetrievalStatus("Error fetching network status.");
       }
-
       // B. Check Hub Status for existing files
       try {
-        const hubRes = await axios.get("http://localhost:5000/api/status");
+        const hubRes = await axios.get(
+          "http://main-hub-production-38c4.up.railway.app/api/status",
+        );
         if (hubRes.data && hubRes.data.models_present) {
           setHubModelsPresent({
             campus1: hubRes.data.models_present.campus1,
@@ -69,7 +75,7 @@ const CentralHub = () => {
 
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/retrieve_local_model/${campusId}`,
+        `http://main-hub-production-38c4.up.railway.app/api/retrieve_local_model/${campusId}`,
       );
       if (res.data.status === "success") {
         setRetrievalStatus(
@@ -100,7 +106,9 @@ const CentralHub = () => {
     ]);
 
     try {
-      const res = await axios.get("http://localhost:5000/api/aggregate_models");
+      const res = await axios.get(
+        "http://main-hub-production-38c4.up.railway.app/api/aggregate_models",
+      );
 
       setTimeout(() => {
         setAggregationLogs((prev) => [
@@ -154,7 +162,7 @@ const CentralHub = () => {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Hospital 1 Terminal */}
+          {/* Campus 1 Terminal */}
           <div className="bg-linear-to-br from-[#0e1526] to-[#0a0f1c] border border-gray-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
               <Icons.Server size={100} />
@@ -163,7 +171,7 @@ const CentralHub = () => {
             <div className="flex justify-between items-start mb-6 relative z-10">
               <div>
                 <h2 className="text-gray-100 font-bold text-lg">
-                  Hospital 1 Node
+                  Campus 1 Node
                 </h2>
                 <p className="text-[10px] text-gray-500 font-mono mt-1">
                   IP: Localhost • Port: 5001
@@ -188,12 +196,12 @@ const CentralHub = () => {
                   Establishing Uplink...
                 </>
               ) : (
-                "Retrieve Model - Hospital 1"
+                "Retrieve Model - Campus 1"
               )}
             </button>
           </div>
 
-          {/* Hospital 2 Terminal */}
+          {/* Campus 2 Terminal */}
           <div className="bg-linear-to-br from-[#0e1526] to-[#0a0f1c] border border-gray-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
               <Icons.Server size={100} />
@@ -202,7 +210,7 @@ const CentralHub = () => {
             <div className="flex justify-between items-start mb-6 relative z-10">
               <div>
                 <h2 className="text-gray-100 font-bold text-lg">
-                  Hospital 2 Node
+                  Campus 2 Node
                 </h2>
                 <p className="text-[10px] text-gray-500 font-mono mt-1">
                   IP: Localhost • Port: 5002
@@ -227,7 +235,7 @@ const CentralHub = () => {
                   Establishing Uplink...
                 </>
               ) : (
-                "Retrieve Model - Hospital 2"
+                "Retrieve Model - Campus 2"
               )}
             </button>
           </div>
@@ -252,13 +260,13 @@ const CentralHub = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
-              node: "Hospital 1 Data",
+              node: "Campus 1 Data",
               status: statuses.campus1,
               file: "local_model_campus1.pkl",
               isStored: hasModel1,
             },
             {
-              node: "Hospital 2 Data",
+              node: "Campus 2 Data",
               status: statuses.campus2,
               file: "local_model_campus2.pkl",
               isStored: hasModel2,

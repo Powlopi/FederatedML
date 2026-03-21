@@ -23,8 +23,8 @@ GLOBAL_MODEL_PATH = os.path.join(MODELS_DIR, 'main_model_v2.pkl')
 # --- CAMPUS NETWORKING CONFIG ---
 # These default to localhost for your local testing, 
 # but will be overridden by Railway Environment Variables.
-CAMPUS_1_URL = os.getenv("CAMPUS_1_URL", "http://localhost:5001")
-CAMPUS_2_URL = os.getenv("CAMPUS_2_URL", "http://localhost:5002")
+CAMPUS_1_URL = os.getenv("CAMPUS_1_URL", "http://campus-1.railway.internal:5001")
+CAMPUS_2_URL = os.getenv("CAMPUS_2_URL", "http://campus-2.railway.internal:5002")
 
 # --- STATUS ROUTE ---
 @app.route('/api/status', methods=['GET'])

@@ -20,21 +20,33 @@ const Overview = () => {
   useEffect(() => {
     // 1. Check Node Statuses
     const checkStatuses = async () => {
-      const ports = { main: 5000, campus1: 5001, campus2: 5002 };
-      for (const [key, port] of Object.entries(ports)) {
+      // Replace these strings with your ACTUAL Railway Public URLs
+      const nodes = {
+        main: "https://main-hub-production-38c4.up.railway.app",
+        campus1: "https://campus-1-production.up.railway.app",
+        campus2: "https://campus-2-production.up.railway.app",
+      };
+
+      for (const [key, url] of Object.entries(nodes)) {
         try {
-          await axios.get(`http://127.0.0.1:${port}/api/status`);
+          // We call the URL + the status endpoint
+          await axios.get(`${url}/api/status`);
           setStatuses((prev) => ({ ...prev, [key]: "Online" }));
-        } catch {
+        } catch (error) {
+          console.error(`Error checking ${key}:`, error);
           setStatuses((prev) => ({ ...prev, [key]: "Offline" }));
         }
       }
     };
 
+    checkStatuses();
+
     // 2. Fetch Global Metrics from Central Hub
     const fetchGlobalMetrics = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:5000/api/global_metrics");
+        const res = await axios.get(
+          "http://main-hub-production-38c4.up.railway.app/api/global_metrics",
+        );
         if (res.data && res.data.status === "success") {
           const acc = res.data.accuracy;
           const f1 = res.data.f1;

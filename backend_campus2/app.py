@@ -17,7 +17,7 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 GLOBAL_MODEL_SAVE_PATH = os.path.join(MODELS_DIR, 'main_model.pkl')
 
 # --- NETWORKING CONFIG ---
-MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "http://localhost:5000")
+MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "http://main-hub.railway.internal:5000")
 
 def get_next_version():
     existing_files = glob.glob(os.path.join(MODELS_DIR, 'local_model_campus2_v*.pkl'))
