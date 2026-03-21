@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Icons } from "../components/Icons";
-import MetricCard from "../components/MetricCard";
 import StatusBadge from "../components/StatusBadge";
 
 const Overview = () => {
@@ -11,7 +10,6 @@ const Overview = () => {
     campus2: "Checking...",
   });
 
-  // NEW: State to hold the dynamic global metrics
   const [metrics, setMetrics] = useState({
     version: "RFC v1.0",
     accuracy: "--",
@@ -33,7 +31,7 @@ const Overview = () => {
       }
     };
 
-    // 2. NEW: Fetch Global Metrics from Central Hub
+    // 2. Fetch Global Metrics from Central Hub
     const fetchGlobalMetrics = async () => {
       try {
         const res = await axios.get("http://127.0.0.1:5000/api/global_metrics");
@@ -43,13 +41,11 @@ const Overview = () => {
 
           setMetrics({
             version: res.data.version || "RFC Latest",
-            // Format accuracy to percentage if it's a decimal
             accuracy: acc
               ? acc <= 1
                 ? (acc * 100).toFixed(2) + "%"
                 : acc + "%"
               : "--",
-            // Format F1 to 2 decimal places
             f1: f1 ? parseFloat(f1).toFixed(2) : "--",
             lastSync: res.data.last_sync || "Unknown",
           });
@@ -65,102 +61,271 @@ const Overview = () => {
     fetchGlobalMetrics();
   }, []);
 
+  // Helper to determine if a node is online for styling the network map
+  const isOnline = (status) => status === "Online";
+
   return (
-    <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
-      {/* Metrics Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <MetricCard
-          title="Global Model"
-          value={metrics.version}
-          IconComponent={Icons.Brain}
-        />
-        <MetricCard
-          title="Avg. Accuracy"
-          value={metrics.accuracy}
-          IconComponent={Icons.Chart}
-        />
-        <MetricCard
-          title="Global F1 Score"
-          value={metrics.f1}
-          IconComponent={Icons.CheckCircle}
-        />
-        <MetricCard
-          title="Active Nodes"
-          value={
-            Object.values(statuses).filter((s) => s === "Online").length + "/3"
-          }
-          IconComponent={Icons.Server}
-        />
+    <div className="animate-in fade-in duration-500 max-w-6xl mx-auto space-y-8 font-sans">
+      {/* HUD Header / Version Timeline */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#0a0f1c] border border-indigo-500/20 backdrop-blur-md rounded-2xl p-5 shadow-[0_0_20px_rgba(79,70,229,0.05)]">
+        <div className="flex items-center gap-3 mb-4 sm:mb-0">
+          <div className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse ring-4 ring-indigo-500/20"></div>
+          <h2 className="text-indigo-200 font-bold tracking-widest uppercase text-sm">
+            System Overview
+          </h2>
+        </div>
+
+        {/* Version Timeline */}
+        <div className="flex items-center gap-3 text-xs sm:text-sm font-mono text-gray-400">
+          <span className="opacity-40">Init</span>
+          <span className="text-indigo-500/50">→</span>
+          <span className="opacity-40">Train</span>
+          <span className="text-indigo-500/50">→</span>
+          <span className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 rounded-md font-bold shadow-[0_0_10px_rgba(79,70,229,0.2)]">
+            {metrics.version}
+          </span>
+        </div>
+      </div>
+
+      {/* TOP METRICS*/}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Global Model */}
+        <div className="bg-linear-to-b from-[#0e1526] to-[#0a0f1c] border border-gray-800 rounded-2xl p-5 relative overflow-hidden group">
+          <div className="absolute top-4 right-4 text-indigo-500/20 group-hover:text-indigo-500/40 transition-colors">
+            <Icons.Brain size={48} />
+          </div>
+          <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-1">
+            Global Model
+          </p>
+          <h3 className="text-2xl font-bold text-gray-100 mb-1">
+            {metrics.version}
+          </h3>
+          <p className="text-[10px] text-indigo-400 font-mono">
+            Sync: {metrics.lastSync}
+          </p>
+        </div>
+
+        {/* Avg. Accuracy */}
+        <div className="bg-linear-to-b from-[#0e1526] to-[#0a0f1c] border border-gray-800 rounded-2xl p-5 relative overflow-hidden">
+          <div className="absolute top-4 right-4 text-blue-500/20">
+            <Icons.Chart size={48} />
+          </div>
+          <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-1">
+            Avg. Accuracy
+          </p>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-3xl font-bold text-gray-100">
+              {metrics.accuracy}
+            </h3>
+            {metrics.accuracy !== "--" && (
+              <span className="text-emerald-400 text-xs font-bold">↑</span>
+            )}
+          </div>
+          {/* Faux Sparkline for visual effect */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-blue-600 to-indigo-500 opacity-50"></div>
+        </div>
+
+        {/* Global F1 Score */}
+        <div className="bg-linear-to-b from-[#0e1526] to-[#0a0f1c] border border-gray-800 rounded-2xl p-5 relative overflow-hidden">
+          <div className="absolute top-4 right-4 text-emerald-500/20">
+            <Icons.CheckCircle size={48} />
+          </div>
+          <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-1">
+            Global F1 Score
+          </p>
+          <h3 className="text-3xl font-bold text-gray-100">{metrics.f1}</h3>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-emerald-600 to-teal-500 opacity-50"></div>
+        </div>
+
+        {/* Active Nodes */}
+        <div className="bg-linear-to-b from-[#0e1526] to-[#0a0f1c] border border-gray-800 rounded-2xl p-5 relative overflow-hidden">
+          <div className="absolute top-4 right-4 text-amber-500/20">
+            <Icons.Server size={48} />
+          </div>
+          <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-1">
+            Active Nodes
+          </p>
+          <div className="flex items-baseline gap-1">
+            <h3 className="text-3xl font-bold text-gray-100">
+              {Object.values(statuses).filter(isOnline).length}
+            </h3>
+            <span className="text-gray-500 text-lg">/3</span>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-amber-600 to-orange-500 opacity-50"></div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Node Status (Static Display) */}
-        <div className="lg:col-span-2 bg-gray-900/30 border border-gray-800 rounded-2xl p-6">
-          <h2 className="text-lg font-semibold text-gray-100 mb-6 flex items-center gap-2">
-            <Icons.Server /> Network Node Status
+        {/* NETWORK TOPOLOGY VISUALIZATION (Replacing the generic static display) */}
+        <div className="lg:col-span-2 bg-[#080c17] border border-indigo-900/30 rounded-2xl p-6 relative shadow-inner flex flex-col min-h-100">
+          <h2 className="text-lg font-semibold text-gray-100 mb-2 flex items-center gap-2 relative z-10">
+            <Icons.Server className="text-indigo-400" /> Network Topology
           </h2>
-          <div className="space-y-4">
-            {[
-              {
-                id: "Cloud",
-                name: "Central Model",
-                desc: "Port 5000 • Central Node",
-                status: statuses.main,
-              },
-              {
-                id: "Campus 1",
-                name: "Campus 1 Dataset",
-                desc: "Port 5001 • Local Node",
-                status: statuses.campus1,
-              },
-              {
-                id: "Campus 2",
-                name: "Campus 2 Dataset",
-                desc: "Port 5002 • Local Node",
-                status: statuses.campus2,
-              },
-            ].map((node) => (
+          <p className="text-xs text-gray-500 font-mono mb-8 relative z-10">
+            Live Connection Map
+          </p>
+
+          <div className="flex-1 flex flex-col items-center justify-center relative w-full mt-4">
+            {/* Connecting Lines (SVG) */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+              {/* Central to Campus 1 */}
+              <path
+                d="M 50% 15% C 30% 40%, 25% 60%, 25% 75%"
+                fill="none"
+                stroke={isOnline(statuses.campus1) ? "#4f46e5" : "#1f2937"}
+                strokeWidth="2"
+                strokeDasharray={isOnline(statuses.campus1) ? "6 6" : "none"}
+                className={
+                  isOnline(statuses.campus1)
+                    ? "animate-[dash_20s_linear_infinite]"
+                    : ""
+                }
+              />
+              {/* Central to Campus 2 */}
+              <path
+                d="M 50% 15% C 70% 40%, 75% 60%, 75% 75%"
+                fill="none"
+                stroke={isOnline(statuses.campus2) ? "#4f46e5" : "#1f2937"}
+                strokeWidth="2"
+                strokeDasharray={isOnline(statuses.campus2) ? "6 6" : "none"}
+                className={
+                  isOnline(statuses.campus2)
+                    ? "animate-[dash_20s_linear_infinite]"
+                    : ""
+                }
+              />
+            </svg>
+
+            {/* Central Node */}
+            <div className="relative z-10 flex flex-col items-center mb-16">
               <div
-                key={node.id}
-                className="bg-gray-950/50 border border-gray-800/60 p-5 rounded-xl flex justify-between items-center"
+                className={`border-2 rounded-xl p-5 mb-3 backdrop-blur-md ${isOnline(statuses.main) ? "bg-indigo-900/40 border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.4)]" : "bg-gray-900 border-gray-700"}`}
               >
-                <div>
-                  <h3 className="text-gray-200 font-medium">{node.name}</h3>
-                  <p className="text-gray-500 text-xs mt-1 font-mono">
-                    {node.desc}
-                  </p>
-                </div>
-                <StatusBadge status={node.status} />
+                <Icons.Brain
+                  className={
+                    isOnline(statuses.main)
+                      ? "text-indigo-300 w-8 h-8"
+                      : "text-gray-600 w-8 h-8"
+                  }
+                />
               </div>
-            ))}
+              <h3 className="text-sm font-bold text-gray-100 bg-[#080c17] px-2">
+                Central Model
+              </h3>
+              <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
+                Port 5000
+              </p>
+              <StatusBadge status={statuses.main} />
+            </div>
+
+            {/* Client Nodes */}
+            <div className="w-full flex justify-around relative z-10 px-4 sm:px-12">
+              {/* Campus 1 */}
+              <div className="flex flex-col items-center">
+                <div
+                  className={`border-2 rounded-xl p-4 mb-3 backdrop-blur-md ${isOnline(statuses.campus1) ? "bg-indigo-900/20 border-indigo-400/50 shadow-[0_0_15px_rgba(79,70,229,0.2)]" : "bg-gray-900 border-gray-800"}`}
+                >
+                  <Icons.Server
+                    className={
+                      isOnline(statuses.campus1)
+                        ? "text-indigo-400"
+                        : "text-gray-600"
+                    }
+                  />
+                </div>
+                <h3 className="text-sm font-bold text-gray-200 bg-[#080c17] px-2">
+                  Campus 1
+                </h3>
+                <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
+                  Port 5001
+                </p>
+                <StatusBadge status={statuses.campus1} />
+              </div>
+
+              {/* Campus 2 */}
+              <div className="flex flex-col items-center">
+                <div
+                  className={`border-2 rounded-xl p-4 mb-3 backdrop-blur-md ${isOnline(statuses.campus2) ? "bg-indigo-900/20 border-indigo-400/50 shadow-[0_0_15px_rgba(79,70,229,0.2)]" : "bg-gray-900 border-gray-800"}`}
+                >
+                  <Icons.Server
+                    className={
+                      isOnline(statuses.campus2)
+                        ? "text-indigo-400"
+                        : "text-gray-600"
+                    }
+                  />
+                </div>
+                <h3 className="text-sm font-bold text-gray-200 bg-[#080c17] px-2">
+                  Campus 2
+                </h3>
+                <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
+                  Port 5002
+                </p>
+                <StatusBadge status={statuses.campus2} />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Model History */}
-        <div className="bg-gray-900/30 border border-gray-800 rounded-2xl p-6">
+        {/* MODEL HISTORY TIMELINE */}
+        <div className="bg-linear-to-b from-[#0e1526] to-[#080c17] border border-gray-800 rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-gray-100 mb-6 flex items-center gap-2">
-            <Icons.Brain /> Aggregation History
+            <Icons.Brain className="text-indigo-400" /> Aggregation History
           </h2>
-          <div className="relative border-l border-gray-800 ml-3 space-y-8">
+
+          <div className="relative border-l-2 border-indigo-900/50 ml-3 space-y-8 mt-4">
+            {/* Latest Update */}
             <div className="relative pl-6">
-              <span className="absolute -left-1.25 top-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-gray-900"></span>
-              <h3 className="text-gray-300 font-medium text-sm">
-                RFC Main Model Synced
+              <span className="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-indigo-500 border-4 border-[#0e1526] shadow-[0_0_10px_rgba(79,70,229,0.5)]"></span>
+              <h3 className="text-indigo-300 font-bold text-sm tracking-wide">
+                {metrics.version} Synced
               </h3>
-              {/* Plug the dynamic timestamp right here! */}
-              <p className="text-gray-500 text-xs mt-1">{metrics.lastSync}</p>
+              <p className="text-gray-400 text-xs mt-1 leading-relaxed">
+                Global weights successfully distributed to all active edge
+                nodes.
+              </p>
+              <div className="mt-2 inline-block bg-gray-900/80 border border-gray-800 px-2 py-1 rounded text-[10px] font-mono text-gray-500">
+                {metrics.lastSync}
+              </div>
             </div>
-            {/* Leaving Initial Boot static since that usually doesn't change during a session */}
-            <div className="relative pl-6 opacity-50">
-              <span className="absolute -left-1.25 top-1.5 w-2 h-2 rounded-full bg-gray-600 ring-4 ring-gray-900"></span>
+
+            {/* Previous State */}
+            <div className="relative pl-6 opacity-60">
+              <span className="absolute -left-1.75 top-1.5 w-3 h-3 rounded-full bg-gray-600 border-2 border-[#0e1526]"></span>
+              <h3 className="text-gray-300 font-medium text-sm">
+                Awaiting Next Round
+              </h3>
+              <p className="text-gray-500 text-xs mt-1">
+                Local models currently training...
+              </p>
+            </div>
+
+            {/* Initial Boot */}
+            <div className="relative pl-6 opacity-40">
+              <span className="absolute -left-1.75 top-1.5 w-3 h-3 rounded-full bg-gray-700 border-2 border-[#0e1526]"></span>
               <h3 className="text-gray-400 font-medium text-sm">
                 Initial System Boot
               </h3>
-              <p className="text-gray-500 text-xs mt-1">System Startup</p>
+              <p className="text-gray-500 text-xs mt-1 font-mono">
+                System Startup
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Required CSS for the dashed line animation on the network map */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes dash {
+          to {
+            stroke-dashoffset: -50;
+          }
+        }
+      `,
+        }}
+      />
     </div>
   );
 };

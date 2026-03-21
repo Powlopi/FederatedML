@@ -1,47 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { BarChart, Server, XCircle } from "lucide-react";
 
 const EvaluationResults = () => {
-  // Mock data - later we will fetch this from Flask!
-  const [metricsData, setMetricsData] = useState([
-    {
-      id: 1,
-      name: "Main Model v1",
-      accuracy: "0.7243",
-      precision: "0.7434",
-      recall: "0.6847",
-      f1: "0.7128",
-      status: "Available",
-    },
-    {
-      id: 2,
-      name: "Campus-1 v2",
-      accuracy: "0.7092",
-      precision: "0.7333",
-      recall: "0.6571",
-      f1: "0.6931",
-      status: "Available",
-    },
-    {
-      id: 3,
-      name: "Campus-2 v2",
-      accuracy: "0.7088",
-      precision: "0.7528",
-      recall: "0.6212",
-      f1: "0.6807",
-      status: "Available",
-    },
-    {
-      id: 4,
-      name: "Main Model v2 (Aggregated)",
-      accuracy: "0.7090",
-      precision: "0.7431",
-      recall: "0.6391",
-      f1: "0.6869",
-      status: "Available",
-    },
-  ]);
+  const [metricsData, setMetricsData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        setIsLoading(true);
+        const res = await axios.get("http://localhost:5000/api/metrics");
+        setMetricsData(res.data);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching metrics:", err);
+        setError("Failed to establish uplink with the evaluation server.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
 
   const getBest = (metric) => {
+    if (metricsData.length === 0) return { value: "0.0000", model: "N/A" };
+
     let bestVal = 0;
     let bestModel = "";
     metricsData.forEach((model) => {
@@ -59,104 +45,212 @@ const EvaluationResults = () => {
   const bestRec = getBest("recall");
   const bestF1 = getBest("f1");
 
+  const getThemeColor = (name) => {
+    if (!name) return "slate";
+    if (name.includes("Aggregated")) return "indigo";
+    if (name.includes("Campus")) return "teal";
+    return "slate";
+  };
+
+  if (error) {
+    return (
+      <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-6 rounded-xl font-mono text-sm flex items-center gap-3">
+        {/* 2. Removed 'Icons.' prefix */}
+        <XCircle size={20} />
+        {error}
+      </div>
+    );
+  }
+
   return (
-    <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-2 text-gray-100">
-        Model Evaluation Results
-      </h1>
-      <p className="text-gray-400 mb-6 text-sm">
-        Evaluation metrics for all models involved in the federated learning
-        process.
-      </p>
+    <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-8 font-sans pb-12">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#0a0f1c] border border-indigo-500/20 backdrop-blur-md rounded-2xl p-6 shadow-[0_0_20px_rgba(79,70,229,0.05)]">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-indigo-500/20 p-2 rounded-lg border border-indigo-500/30">
+              {/* 3. Removed 'Icons.' prefix and swapped to BarChart */}
+              <BarChart className="text-indigo-400" size={24} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-100 uppercase tracking-widest">
+              Evaluation Results
+            </h1>
+          </div>
+          <p className="text-gray-400 text-sm max-w-2xl mt-2 leading-relaxed">
+            Comparative telemetry for all neural network states. Use these
+            metrics to evaluate the efficacy of the Federated Averaging process
+            against local baselines.
+          </p>
+        </div>
+      </div>
 
       {/* Info Banner */}
-      <div className="bg-gray-900/50 border border-gray-800 text-indigo-300 px-4 py-3 rounded-xl mb-8 text-sm shadow-sm flex items-center gap-3">
-        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-        Main Model v2 metrics are based on default values. Run aggregation in
-        the Central Hub to update.
+      <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-5 py-4 rounded-xl text-xs font-mono shadow-[0_0_15px_rgba(245,158,11,0.1)] flex items-center gap-3">
+        <Server className="shrink-0" size={16} />
+        <p>
+          <strong className="text-amber-300">SYSTEM NOTICE:</strong> Main Model
+          v2 metrics are currently based on default initialization values.
+          Execute an aggregation cycle in the Central Hub to compile latest
+          weights.
+        </p>
       </div>
 
-      {/* Performance Summary Section */}
-      <h2 className="text-xl font-semibold mb-4 text-gray-200">
-        Performance Summary
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-        {[
-          { label: "Best Accuracy", val: bestAcc.value, model: bestAcc.model },
-          {
-            label: "Best Precision",
-            val: bestPrec.value,
-            model: bestPrec.model,
-          },
-          { label: "Best Recall", val: bestRec.value, model: bestRec.model },
-          { label: "Best F1 Score", val: bestF1.value, model: bestF1.model },
-        ].map((stat, idx) => (
-          <div
-            key={idx}
-            className="bg-gray-900/60 border border-gray-800 p-5 rounded-2xl hover:border-indigo-500/30 transition-colors"
-          >
-            <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">
-              {stat.label}
-            </p>
-            <p className="text-3xl font-bold mb-1 text-gray-100">{stat.val}</p>
-            <p className="text-emerald-400 text-xs flex items-center gap-1 font-mono">
-              <span>↑</span> {stat.model}
-            </p>
-          </div>
-        ))}
+      {/* PERFORMANCE SUMMARY*/}
+      <div>
+        <h2 className="text-sm font-mono text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-indigo-500 rounded-sm"></span>
+          Global Best Achievements
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Peak Accuracy",
+              val: bestAcc.value,
+              model: bestAcc.model,
+              color: "from-blue-900/40 to-[#0e1526]",
+              border: "border-blue-500/30",
+            },
+            {
+              label: "Peak Precision",
+              val: bestPrec.value,
+              model: bestPrec.model,
+              color: "from-purple-900/40 to-[#0e1526]",
+              border: "border-purple-500/30",
+            },
+            {
+              label: "Peak Recall",
+              val: bestRec.value,
+              model: bestRec.model,
+              color: "from-emerald-900/40 to-[#0e1526]",
+              border: "border-emerald-500/30",
+            },
+            {
+              label: "Peak F1 Score",
+              val: bestF1.value,
+              model: bestF1.model,
+              color: "from-indigo-900/40 to-[#0e1526]",
+              border: "border-indigo-500/30",
+            },
+          ].map((stat, idx) => (
+            <div
+              key={idx}
+              className={`bg-linear-to-br ${stat.color} border ${stat.border} p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden group hover:shadow-[0_0_20px_rgba(79,70,229,0.15)] transition-all`}
+            >
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2 z-10 relative">
+                {stat.label}
+              </p>
+              <div className="z-10 relative">
+                <p className="text-3xl font-bold mb-3 text-gray-100 font-mono">
+                  {stat.val}
+                </p>
+                <p className="text-indigo-300 text-[10px] uppercase font-bold tracking-wider bg-indigo-500/10 border border-indigo-500/20 inline-block px-2 py-1 rounded">
+                  ★ {stat.model}
+                </p>
+              </div>
+              {/* Background watermark */}
+              <div className="absolute -bottom-4 -right-4 text-white/3 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                <BarChart size={100} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Detailed Metrics Table */}
-      <h2 className="text-xl font-semibold mb-4 text-gray-200">
-        Detailed Metrics Table
-      </h2>
-      <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden shadow-lg">
-        <table className="w-full text-left text-sm text-gray-300">
-          <thead className="text-xs text-gray-400 bg-gray-950/80 border-b border-gray-800 uppercase tracking-wider">
-            <tr>
-              <th scope="col" className="px-6 py-4 font-medium">
-                Model
-              </th>
-              <th scope="col" className="px-6 py-4 font-medium">
-                Accuracy
-              </th>
-              <th scope="col" className="px-6 py-4 font-medium">
-                Precision
-              </th>
-              <th scope="col" className="px-6 py-4 font-medium">
-                Recall
-              </th>
-              <th scope="col" className="px-6 py-4 font-medium">
-                F1 Score
-              </th>
-              <th scope="col" className="px-6 py-4 font-medium">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800/50">
-            {metricsData.map((row) => (
-              <tr
+      {/* DETAILED METRICS MATRIX */}
+      <div>
+        <h2 className="text-sm font-mono text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-indigo-500 rounded-sm animate-pulse"></span>
+          Model Telemetry Matrix
+        </h2>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {metricsData.map((row) => {
+            const theme = getThemeColor(row.name);
+
+            const cardStyle =
+              theme === "indigo"
+                ? "bg-gradient-to-r from-indigo-900/20 to-[#080c17] border-indigo-500/40 shadow-[0_0_20px_rgba(79,70,229,0.1)] scale-[1.02]"
+                : theme === "teal"
+                  ? "bg-gradient-to-r from-teal-900/10 to-[#080c17] border-teal-500/20"
+                  : "bg-gradient-to-r from-slate-900/30 to-[#080c17] border-slate-700/50";
+
+            const barColor =
+              theme === "indigo"
+                ? "bg-indigo-500"
+                : theme === "teal"
+                  ? "bg-teal-500"
+                  : "bg-slate-500";
+            const textColor =
+              theme === "indigo"
+                ? "text-indigo-300"
+                : theme === "teal"
+                  ? "text-teal-300"
+                  : "text-slate-300";
+
+            return (
+              <div
                 key={row.id}
-                className="hover:bg-gray-800/30 transition-colors"
+                className={`rounded-2xl border p-6 flex flex-col justify-between transition-all ${cardStyle}`}
               >
-                <td className="px-6 py-4 font-medium text-gray-100">
-                  {row.name}
-                </td>
-                <td className="px-6 py-4 font-mono">{row.accuracy}</td>
-                <td className="px-6 py-4 font-mono">{row.precision}</td>
-                <td className="px-6 py-4 font-mono">{row.recall}</td>
-                <td className="px-6 py-4 font-mono text-indigo-300">
-                  {row.f1}
-                </td>
-                <td className="px-6 py-4 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  {row.status}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                {/* Card Header */}
+                <div className="flex justify-between items-start mb-6 border-b border-gray-800/50 pb-4">
+                  <div>
+                    <h3
+                      className={`text-xl font-bold tracking-wide mb-1 ${textColor}`}
+                    >
+                      {row.name}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${barColor}`}
+                      ></span>
+                      <span className="text-xs font-mono uppercase tracking-widest text-gray-500">
+                        {row.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* F1 Hero Metric */}
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">
+                      Overall F1
+                    </p>
+                    <p className={`text-2xl font-mono font-bold ${textColor}`}>
+                      {row.f1}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Progress Bars for Metrics */}
+                <div className="space-y-4">
+                  {[
+                    { label: "Accuracy", value: row.accuracy },
+                    { label: "Precision", value: row.precision },
+                    { label: "Recall", value: row.recall },
+                  ].map((metric, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="w-20 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                        {metric.label}
+                      </div>
+                      <div className="flex-1 h-2 bg-gray-900 rounded-full overflow-hidden border border-gray-800 relative">
+                        {/* The actual progress bar */}
+                        <div
+                          className={`absolute top-0 left-0 h-full rounded-full ${barColor} shadow-[0_0_10px_currentColor]`}
+                          style={{
+                            width: `${parseFloat(metric.value) * 100}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="w-12 text-right text-xs font-mono text-gray-300">
+                        {metric.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
