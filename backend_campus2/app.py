@@ -24,7 +24,7 @@ MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "https://main-hub-production-38c4.up.ra
 
 # --- HELPER: GET NEXT VERSION NUMBER ---
 def get_next_version():
-    existing_files = glob.glob(os.path.join(MODELS_DIR, 'local_model_campus1_v*.pkl'))
+    existing_files = glob.glob(os.path.join(MODELS_DIR, 'local_model_campus2_v*.pkl'))
     versions = []
     for f in existing_files:
         try:

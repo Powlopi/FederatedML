@@ -19,7 +19,7 @@ def run_local_training(train_path, test_path, output_model_path):
         global_model_path = os.path.join(os.getcwd(), 'models', 'main_model.pkl')
         if os.path.exists(global_model_path):
             global_model = joblib.load(global_model_path)
-            g_preds = global_model.predict(X_test)
+            g_preds = global_model.predict(X_test.values)
             g_acc = accuracy_score(y_test, g_preds)
             g_f1 = f1_score(y_test, g_preds, average='weighted')
         else:
@@ -27,11 +27,11 @@ def run_local_training(train_path, test_path, output_model_path):
             g_f1 = 0.612
 
         # Train Local Model
-        local_model = RandomForestClassifier(n_estimators=100, random_state=42)
-        local_model.fit(X_train, y_train)
+        local_model = RandomForestClassifier(n_estimators=150, random_state=99)
+        local_model.fit(X_train.values, y_train)
         
         # Evaluate Local Model
-        l_preds = local_model.predict(X_test)
+        l_preds = local_model.predict(X_test.values)
         l_acc = accuracy_score(y_test, l_preds)
         l_f1 = f1_score(y_test, l_preds, average='weighted')
         
