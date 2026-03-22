@@ -63,15 +63,32 @@ def retrieve_global_model():
 @app.route('/api/evaluate', methods=['POST'])
 def evaluate_model():
     data = request.json or {}
-    sample_size = data.get('sample_size', 50)
+    
+    # 1. DYNAMIC TYPE CASTING: Converts whatever the UI sends into a safe integer.
+    try:
+        # Grab the sample_size, default to 100 if missing, and FORCE it to be an int
+        raw_size = data.get('sample_size', 100)
+        sample_size = int(raw_size)
+        
+        # Security check: Prevent 0 or negative numbers
+        if sample_size <= 0:
+            sample_size = 100 
+    except (ValueError, TypeError):
+        # Fallback just in case bad data (like text) gets sent
+        sample_size = 100
 
     if not os.path.exists(GLOBAL_MODEL_SAVE_PATH):
         return jsonify({"status": "error", "message": "No Global model to evaluate."}), 404
 
     try:
         global_model = joblib.load(GLOBAL_MODEL_SAVE_PATH)
+        
+        # NOTE: Make sure this file matches the campus!
+        # Campus 1 = 'set2_test.csv', Campus 2 = 'set3_test.csv'
         test_path = os.path.join(os.getcwd(), 'set2_test.csv') 
         df_test = pd.read_csv(test_path)
+        
+        # 2. DYNAMIC SLICING: Safely slice the exact number requested
         df_sample = df_test.head(sample_size)
 
         X_test = df_sample.iloc[:, :-1]
@@ -83,9 +100,12 @@ def evaluate_model():
 
         return jsonify({
             "status": "success",
+            "samples_tested": len(df_sample), # Tell the frontend exactly how many we tested
             "global_metrics": {"accuracy": round(acc, 4), "f1": round(f1, 4)}
         }), 200
+        
     except Exception as e:
+        print(f"EVALUATION CRASH: {str(e)}") # Prints exactly what went wrong in Railway logs
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/retrain', methods=['POST'])
