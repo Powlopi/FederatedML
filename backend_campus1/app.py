@@ -20,7 +20,7 @@ GLOBAL_MODEL_SAVE_PATH = os.path.join(MODELS_DIR, 'main_model.pkl')
 
 # --- NETWORKING CONFIG ---
 # Points to the Main Hub. Defaults to localhost for local dev.
-MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "https://main-hub.railway.internal:5000")
+MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "https://main-hub-production-38c4.up.railway.app")
 
 # --- HELPER: GET NEXT VERSION NUMBER ---
 def get_next_version():

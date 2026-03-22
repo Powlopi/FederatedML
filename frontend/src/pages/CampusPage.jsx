@@ -37,22 +37,21 @@ const CampusPage = ({
   // --- 3. API FUNCTIONS ---
   const retrieveGlobalModelFromHub = async () => {
     setLoading(true);
-    addLog(">> Communicating with Central aggregation server...");
+    addLog(">> Commanding Local Node to sync with Central Hub...");
 
     try {
-      const MAIN_HUB_PUBLIC_URL =
-        "https://main-hub-production-38c4.up.railway.app";
-
+      // FIX: We are now telling the CURRENT CAMPUS to go fetch the model
       const res = await axios.get(
-        `${MAIN_HUB_PUBLIC_URL}/api/download_global_model`,
+        `${currentCampusUrl}/api/retrieve_global_model`,
       );
 
-      addLog(">> Global model parameter download initiated.");
+      addLog(">> Global model parameter download initiated by Campus Node.");
 
       setTimeout(() => {
-        addLog(`[SUCCESS] Global model file received and synchronized.`);
+        // We can display the success message from the Python backend!
+        addLog(`[SUCCESS] ${res.data.message || "Global model synchronized."}`);
         setLoading(false);
-      }, 1500);
+      }, 1000);
     } catch (err) {
       const actualError = err.response?.data?.message || err.message;
       addLog(`[ERROR] Sync Failed: ${actualError}`);
@@ -329,7 +328,6 @@ const CampusPage = ({
         </div>
 
         {/* RIGHT COLUMN: TERMINAL */}
-        {/* FIX: Changed min-h-125 to min-h-[500px] */}
         <div className="w-full xl:w-96 shrink-0 bg-[#050b14] rounded-2xl p-5 font-mono text-sm border border-gray-800/80 shadow-2xl flex flex-col min-h-125">
           <div className="flex items-center gap-2 pb-4 mb-2 border-b border-gray-800/80 shrink-0">
             <div className="flex gap-1.5">
