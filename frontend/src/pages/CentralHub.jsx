@@ -51,7 +51,7 @@ const CentralHub = () => {
       // B. Check Hub Status for existing files
       try {
         const hubRes = await axios.get(
-          "http://main-hub-production-38c4.up.railway.app/api/status",
+          "https://main-hub-production-38c4.up.railway.app/api/status",
         );
         if (hubRes.data && hubRes.data.models_present) {
           setHubModelsPresent({
@@ -75,7 +75,7 @@ const CentralHub = () => {
 
     try {
       const res = await axios.get(
-        `http://main-hub-production-38c4.up.railway.app/api/retrieve_local_model/${campusId}`,
+        `https://main-hub-production-38c4.up.railway.app/api/retrieve_local_model/${campusId}`,
       );
       if (res.data.status === "success") {
         setRetrievalStatus(
@@ -107,7 +107,7 @@ const CentralHub = () => {
 
     try {
       const res = await axios.get(
-        "http://main-hub-production-38c4.up.railway.app/api/aggregate_models",
+        "https://main-hub-production-38c4.up.railway.app/api/aggregate_models",
       );
 
       setTimeout(() => {

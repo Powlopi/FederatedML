@@ -45,7 +45,7 @@ const Overview = () => {
     const fetchGlobalMetrics = async () => {
       try {
         const res = await axios.get(
-          "http://main-hub-production-38c4.up.railway.app/api/global_metrics",
+          "https://main-hub-production-38c4.up.railway.app/api/global_metrics",
         );
         if (res.data && res.data.status === "success") {
           const acc = res.data.accuracy;
