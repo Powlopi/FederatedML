@@ -17,7 +17,6 @@ const Overview = () => {
     lastSync: "Checking...",
   });
 
-  // Wrapped in useCallback so we can safely use it inside useEffect
   const fetchGlobalMetrics = useCallback(async () => {
     try {
       const res = await axios.get(
@@ -70,7 +69,7 @@ const Overview = () => {
       await fetchGlobalMetrics();
     };
 
-    // Initial Load (Only called once now)
+    // Initial Load
     refreshData();
 
     // Set Intervals and Listeners
@@ -186,7 +185,6 @@ const Overview = () => {
           </p>
 
           <div className="flex-1 flex flex-col items-center justify-center relative w-full mt-4">
-            {/* Connecting Lines (SVG) - FIXED FOR CONSOLE ERRORS */}
             <svg
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
@@ -233,10 +231,8 @@ const Overview = () => {
                   }
                 />
               </div>
-              <h3 className="text-sm font-bold text-gray-100 bg-[#080c17] px-2">
-                Central Model
-              </h3>
-              <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
+              <h3 className="text-sm font-bold text-gray-100">Central Model</h3>
+              <p className="text-[10px] text-gray-500 font-mono mb-2">
                 Node: Railway - Main-Hub
               </p>
               <StatusBadge status={statuses.main} />
@@ -257,10 +253,8 @@ const Overview = () => {
                     }
                   />
                 </div>
-                <h3 className="text-sm font-bold text-gray-200 bg-[#080c17] px-2">
-                  Campus 1
-                </h3>
-                <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
+                <h3 className="text-sm font-bold text-gray-200">Campus 1</h3>
+                <p className="text-[10px] text-gray-500 font-mono mb-2">
                   Node: Railway - Campus-1
                 </p>
                 <StatusBadge status={statuses.campus1} />
@@ -279,10 +273,8 @@ const Overview = () => {
                     }
                   />
                 </div>
-                <h3 className="text-sm font-bold text-gray-200 bg-[#080c17] px-2">
-                  Campus 2
-                </h3>
-                <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
+                <h3 className="text-sm font-bold text-gray-200">Campus 2</h3>
+                <p className="text-[10px] text-gray-500 font-mono mb-2">
                   Node: Railway - Campus-2
                 </p>
                 <StatusBadge status={statuses.campus2} />

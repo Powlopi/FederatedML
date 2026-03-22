@@ -24,7 +24,7 @@ const EvaluationResults = () => {
     }
   };
 
-  // 2. Initial load still runs once on mount
+  // 2. Initial load
   useEffect(() => {
     fetchMetrics();
   }, []);

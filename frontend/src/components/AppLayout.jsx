@@ -6,7 +6,6 @@ const AppLayout = ({ children }) => {
 
   return (
     <div className="h-screen bg-[#030712] text-gray-100 font-sans flex overflow-hidden selection:bg-indigo-500/30">
-      {/* NEW: Dark overlay background when sidebar is open on mobile */}
       {isSidebarOpen && (
         <div
           className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${
@@ -47,7 +46,6 @@ const AppLayout = ({ children }) => {
               <h1 className="text-xl md:text-3xl font-semibold text-gray-100 tracking-tight">
                 System Dashboard
               </h1>
-              {/* Hide subtitle on very small screens to save space */}
               <p className="text-xs md:text-sm text-gray-500 mt-1 hidden sm:block">
                 Federated Learning Architecture
               </p>

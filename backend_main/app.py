@@ -40,22 +40,18 @@ def get_status():
 # --- MODEL RETRIEVAL ROUTE (PULL) ---
 @app.route('/api/retrieve_local_model/<campus_id>', methods=['GET'])
 def retrieve_local_model(campus_id):
-    """
-    Connects to a campus node and pulls its pickled model file to the central server.
-    """
-    # Mapping IDs to the dynamic URLs defined at the top
+    
     url_map = {"1": CAMPUS_1_URL, "2": CAMPUS_2_URL}
     path_map = {"1": LOCAL_MODEL_1_PATH, "2": LOCAL_MODEL_2_PATH}
     
     if campus_id not in url_map:
         return jsonify({"status": "error", "message": "Invalid Campus ID"}), 400
     
-    # Construct the endpoint URL for the specific campus
+    
     campus_endpoint = f"{url_map[campus_id]}/api/download_model"
     local_save_path = path_map[campus_id]
 
     try:
-        # Download the pickled file
         response = requests.get(campus_endpoint)
         
         if response.status_code == 200:
@@ -128,11 +124,11 @@ def get_all_metrics():
 
 @app.route('/api/global_metrics', methods=['GET'])
 def get_global_metrics():
-    # 1. Check if model exists
+    # Check if model exists
     if not os.path.exists(GLOBAL_MODEL_PATH):
         return jsonify({"status": "error", "message": "Global model not found."}), 404
 
-    # 2. Check if test data exists
+    # Check if test data exists
     test_data_path = os.path.join(os.getcwd(), 'global_test.csv') 
     if not os.path.exists(test_data_path):
         return jsonify({
@@ -144,39 +140,36 @@ def get_global_metrics():
         })
 
     try:
-        # 3. FORCE fresh load of the model (No caching)
         model = joblib.load(GLOBAL_MODEL_PATH, mmap_mode=None)
         
         df = pd.read_csv(test_data_path)
         
-        # 4. Clean data (Remove 'Unnamed' columns if any exist)
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         
         X_test = df.iloc[:, :-1]
         y_test = df.iloc[:, -1]
 
-        # 5. Calculate Metrics
+        #Calculate Metrics
         predictions = model.predict(X_test)
         acc = accuracy_score(y_test, predictions)
-        # Using weighted F1 to handle potential class imbalance
         f1 = f1_score(y_test, predictions, average='weighted')
 
-        # 6. Get the EXACT time the file was saved
         timestamp = os.path.getmtime(GLOBAL_MODEL_PATH)
-        dt_object = datetime.datetime.fromtimestamp(timestamp)
-        # Clean format: "March 22, 2026 • 03:15 PM"
-        formatted_time = dt_object.strftime("%B %d, %Y • %I:%M %p")
+        dt_utc = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+        pht_timezone = datetime.timezone(datetime.timedelta(hours=8))
+        dt_local = dt_utc.astimezone(pht_timezone)
+        formatted_time = dt_local.strftime("%B %d, %Y • %I:%M %p")
 
         return jsonify({
             "status": "success", 
             "version": "RFC v2.0", 
-            "accuracy": float(acc), # Ensure it's a JSON-serializable float
+            "accuracy": float(acc),
             "f1": float(f1), 
             "last_sync": formatted_time
         })
         
     except Exception as e:
-        print(f"Metrics Error: {str(e)}") # This helps you see the error in Railway Logs
+        print(f"Metrics Error: {str(e)}")
         return jsonify({"status": "error", "message": f"Calculation error: {str(e)}"}), 500
 
 if __name__ == '__main__':

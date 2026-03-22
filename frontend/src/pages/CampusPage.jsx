@@ -9,7 +9,6 @@ const CampusPage = ({
   records = 2400,
 }) => {
   // --- 1. ROUTING & URL SETUP ---
-  // Grab the ID from the URL (e.g., /campus/1) if it wasn't passed directly as a prop
   const { id: routeId } = useParams();
   const activeId = id || routeId;
 
@@ -40,7 +39,6 @@ const CampusPage = ({
     addLog(">> Commanding Local Node to sync with Central Hub...");
 
     try {
-      // FIX: We are now telling the CURRENT CAMPUS to go fetch the model
       const res = await axios.get(
         `${currentCampusUrl}/api/retrieve_global_model`,
       );
@@ -48,7 +46,6 @@ const CampusPage = ({
       addLog(">> Global model parameter download initiated by Campus Node.");
 
       setTimeout(() => {
-        // We can display the success message from the Python backend!
         addLog(`[SUCCESS] ${res.data.message || "Global model synchronized."}`);
         setLoading(false);
       }, 1000);
@@ -73,7 +70,6 @@ const CampusPage = ({
     addLog(`>> Requesting evaluation with ${selectedSamples} test samples...`);
 
     try {
-      // Using the dynamic Railway URL based on the current campus
       const res = await axios.post(`${currentCampusUrl}/api/evaluate`, {
         sample_size: selectedSamples,
       });
@@ -103,7 +99,6 @@ const CampusPage = ({
     addLog(`>> Retraining local model...`);
 
     try {
-      // Using the dynamic Railway URL based on the current campus
       const res = await axios.post(`${currentCampusUrl}/api/retrain`, {
         sample_size: 100,
       });
@@ -197,15 +192,12 @@ const CampusPage = ({
                 <div className="mb-4 mt-3">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>Sample Size</span>
-                    {/* Replaced the span with a sleek number input for exact values */}
                     <input
                       type="number"
                       min="1"
                       max={records > 500 ? 500 : records}
-                      // This prevents the '0' from getting stuck when you delete everything
                       value={selectedSamples === 0 ? "" : selectedSamples}
                       onChange={(e) => {
-                        // parseInt automatically strips leading zeros (e.g., "075" becomes 75)
                         const val = parseInt(e.target.value, 10);
                         setSelectedSamples(isNaN(val) ? 0 : val);
                       }}
@@ -277,7 +269,6 @@ const CampusPage = ({
           </div>
 
           {/* Results Table */}
-          {/* FIX: Changed overflow-hidden to overflow-x-auto */}
           <div className="bg-[#0a1120] border border-gray-800 rounded-xl p-0 overflow-x-auto shadow-inner">
             <div className="bg-gray-900/80 px-5 py-3 border-b border-gray-800 flex justify-between items-center min-w-125">
               <h3 className="text-gray-300 text-sm font-semibold tracking-wide">

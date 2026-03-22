@@ -127,7 +127,6 @@ const CentralHub = () => {
       );
 
       if (evalRes.data.status === "success") {
-        // app.py returns accuracy and f1 directly on the data object
         const m = evalRes.data;
         setAggregationLogs((prev) => [
           ...prev,
