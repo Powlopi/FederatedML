@@ -96,44 +96,58 @@ const CentralHub = () => {
     if (campusId === "2") setLoading2(false);
   };
 
+  const getTimestamp = () => {
+    const now = new Date();
+    return `[${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}]`;
+  };
+
   // 3. Action: Trigger Federated Averaging
   const performAggregation = async () => {
     setIsAggregating(true);
-    setAggregationLogs([]);
-    setRetrievalStatus("");
     setAggregationLogs([
-      "[10:14:00] >> Starting Federated Aggregation on both models...",
+      `${getTimestamp()} >> Starting Federated Aggregation...`,
     ]);
 
     try {
+      // 1. Run the Aggregation
       const res = await axios.get(
         "https://main-hub-production-38c4.up.railway.app/api/aggregate_models",
       );
 
-      setTimeout(() => {
-        setAggregationLogs((prev) => [
-          ...prev,
-          `[10:14:02] >> Federated Averaging complete. Trees successfully combined.`,
-        ]);
-      }, 1000);
+      setAggregationLogs((prev) => [...prev, `[SUCCESS] ${res.data.message}`]);
 
-      setTimeout(() => {
+      // 2. NEW: Trigger a Global Evaluation immediately!
+      setAggregationLogs((prev) => [
+        ...prev,
+        `${getTimestamp()} >> Re-evaluating Global Model...`,
+      ]);
+
+      // We call the evaluate endpoint with a sample size (e.g., 100)
+      const evalRes = await axios.post(
+        "https://main-hub-production-38c4.up.railway.app/api/evaluate_global",
+        {
+          sample_size: 100,
+        },
+      );
+
+      if (evalRes.data.status === "success") {
+        const m = evalRes.data.global_metrics;
         setAggregationLogs((prev) => [
           ...prev,
-          `[SUCCESS] ${res.data.message}`,
+          `[METRICS UPDATED] Accuracy: ${(m.accuracy * 100).toFixed(2)}% | F1: ${m.f1.toFixed(4)}`,
         ]);
-        setIsAggregating(false);
-      }, 2500);
+      }
+
+      setIsAggregating(false);
     } catch (err) {
       setAggregationLogs((prev) => [
         ...prev,
-        `[ERROR] Aggregation Failed: ${err.message}`,
+        `${getTimestamp()} >> [SUCCESS] ${res.data.message}`,
       ]);
       setIsAggregating(false);
     }
   };
 
-  // THE FIX: Check if we clicked the button OR if the hub already sees the files!
   const hasModel1 = retrievedCampus1 || hubModelsPresent.campus1;
   const hasModel2 = retrievedCampus2 || hubModelsPresent.campus2;
   const isReadyForFedAvg = hasModel1 && hasModel2;

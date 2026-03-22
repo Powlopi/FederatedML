@@ -41,6 +41,24 @@ const Overview = () => {
 
     checkStatuses();
 
+    const refreshData = async () => {
+      await checkStatuses();
+      await fetchGlobalMetrics();
+    };
+
+    refreshData();
+
+    // Optional: Refresh every 30 seconds automatically
+    const interval = setInterval(refreshData, 30000);
+
+    // Optional: Refresh when the user clicks back onto the tab
+    window.addEventListener("focus", refreshData);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refreshData);
+    };
+
     // 2. Fetch Global Metrics from Central Hub
     const fetchGlobalMetrics = async () => {
       try {
