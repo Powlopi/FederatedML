@@ -37,12 +37,12 @@ def get_next_version():
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    return jsonify({"status": "Online", "message": "Campus 1 Node Active"}), 200
+    return jsonify({"status": "Online", "message": "Campus 2 Node Active"}), 200
 
 @app.route('/api/download_model', methods=['GET'])
 def download_model():
     # File name expected by the Main Hub
-    filename = 'local_model_campus1.pkl' 
+    filename = 'local_model_campus2.pkl' 
     return send_from_directory(MODELS_DIR, filename, as_attachment=True)
 
 @app.route('/api/retrieve_global_model', methods=['GET'])
@@ -125,5 +125,5 @@ def train_model():
     return jsonify(result), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5001))
+    port = int(os.environ.get("PORT", 5002))
     app.run(host='0.0.0.0', port=port)
