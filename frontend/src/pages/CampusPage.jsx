@@ -198,9 +198,20 @@ const CampusPage = ({
                 <div className="mb-4 mt-3">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>Sample Size</span>
-                    <span className="font-mono text-emerald-400">
-                      {selectedSamples}
-                    </span>
+                    {/* Replaced the span with a sleek number input for exact values */}
+                    <input
+                      type="number"
+                      min="1"
+                      max={records > 500 ? 500 : records}
+                      // This prevents the '0' from getting stuck when you delete everything
+                      value={selectedSamples === 0 ? "" : selectedSamples}
+                      onChange={(e) => {
+                        // parseInt automatically strips leading zeros (e.g., "075" becomes 75)
+                        const val = parseInt(e.target.value, 10);
+                        setSelectedSamples(isNaN(val) ? 0 : val);
+                      }}
+                      className="font-mono text-emerald-400 bg-gray-900 border border-gray-700 rounded px-2 py-0.5 w-16 text-right outline-none focus:border-emerald-500/50 focus:bg-gray-800 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                   </div>
                   <input
                     type="range"
