@@ -22,9 +22,9 @@ const Overview = () => {
     const checkStatuses = async () => {
       // Replace these strings with your ACTUAL Railway Public URLs
       const nodes = {
-        main: "https://main-hub-production-38c4.up.railway.app",
-        campus1: "https://campus-1-production.up.railway.app",
-        campus2: "https://campus-2-production.up.railway.app",
+        main: import.meta.env.VITE_MAIN_HUB_URL,
+        campus1: import.meta.env.VITE_CAMPUS_1_URL,
+        campus2: import.meta.env.VITE_CAMPUS_2_URL,
       };
 
       for (const [key, url] of Object.entries(nodes)) {

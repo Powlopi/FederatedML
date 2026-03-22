@@ -21,8 +21,6 @@ LOCAL_MODEL_2_PATH = os.path.join(MODELS_DIR, 'local_model_campus2.pkl')
 GLOBAL_MODEL_PATH = os.path.join(MODELS_DIR, 'main_model_v2.pkl')
 
 # --- CAMPUS NETWORKING CONFIG ---
-# These default to localhost for your local testing, 
-# but will be overridden by Railway Environment Variables.
 CAMPUS_1_URL = os.getenv("CAMPUS_1_URL", "http://campus-1.railway.internal:5001")
 CAMPUS_2_URL = os.getenv("CAMPUS_2_URL", "http://campus-2.railway.internal:5002")
 
@@ -159,6 +157,5 @@ def get_global_metrics():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    # Railway sets the 'PORT' environment variable automatically
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)

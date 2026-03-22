@@ -57,7 +57,6 @@ const EvaluationResults = () => {
   if (error) {
     return (
       <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-6 rounded-xl font-mono text-sm flex items-center gap-3">
-        {/* 2. Removed 'Icons.' prefix */}
         <XCircle size={20} />
         {error}
       </div>
@@ -67,18 +66,17 @@ const EvaluationResults = () => {
   return (
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-8 font-sans pb-12">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#0a0f1c] border border-indigo-500/20 backdrop-blur-md rounded-2xl p-6 shadow-[0_0_20px_rgba(79,70,229,0.05)]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#0a0f1c] border border-indigo-500/20 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-[0_0_20px_rgba(79,70,229,0.05)]">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-indigo-500/20 p-2 rounded-lg border border-indigo-500/30">
-              {/* 3. Removed 'Icons.' prefix and swapped to BarChart */}
               <BarChart className="text-indigo-400" size={24} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-100 uppercase tracking-widest">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-100 uppercase tracking-widest">
               Evaluation Results
             </h1>
           </div>
-          <p className="text-gray-400 text-sm max-w-2xl mt-2 leading-relaxed">
+          <p className="text-gray-400 text-xs sm:text-sm max-w-2xl mt-2 leading-relaxed">
             Comparative telemetry for all neural network states. Use these
             metrics to evaluate the efficacy of the Federated Averaging process
             against local baselines.
@@ -87,8 +85,8 @@ const EvaluationResults = () => {
       </div>
 
       {/* Info Banner */}
-      <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-5 py-4 rounded-xl text-xs font-mono shadow-[0_0_15px_rgba(245,158,11,0.1)] flex items-center gap-3">
-        <Server className="shrink-0" size={16} />
+      <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-4 sm:px-5 py-3 sm:py-4 rounded-xl text-[10px] sm:text-xs font-mono shadow-[0_0_15px_rgba(245,158,11,0.1)] flex items-start sm:items-center gap-3">
+        <Server className="shrink-0 mt-0.5 sm:mt-0" size={16} />
         <p>
           <strong className="text-amber-300">SYSTEM NOTICE:</strong> Main Model
           v2 metrics are currently based on default initialization values.
@@ -99,11 +97,13 @@ const EvaluationResults = () => {
 
       {/* PERFORMANCE SUMMARY*/}
       <div>
-        <h2 className="text-sm font-mono text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <h2 className="text-xs sm:text-sm font-mono text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-indigo-500 rounded-sm"></span>
           Global Best Achievements
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        {/* MODIFIED: grid-cols-2 on mobile by default, moving to 4 on large screens. Gap shrunk on mobile. */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[
             {
               label: "Peak Accuracy",
@@ -136,22 +136,22 @@ const EvaluationResults = () => {
           ].map((stat, idx) => (
             <div
               key={idx}
-              className={`bg-linear-to-br ${stat.color} border ${stat.border} p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden group hover:shadow-[0_0_20px_rgba(79,70,229,0.15)] transition-all`}
+              // MODIFIED: Padding adjusted for mobile (p-3) vs desktop (sm:p-5)
+              className={`bg-linear-to-br ${stat.color} border ${stat.border} p-3 sm:p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden group hover:shadow-[0_0_20px_rgba(79,70,229,0.15)] transition-all`}
             >
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2 z-10 relative">
+              <p className="text-gray-400 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest mb-1 sm:mb-2 z-10 relative truncate">
                 {stat.label}
               </p>
               <div className="z-10 relative">
-                <p className="text-3xl font-bold mb-3 text-gray-100 font-mono">
+                <p className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3 text-gray-100 font-mono">
                   {stat.val}
                 </p>
-                <p className="text-indigo-300 text-[10px] uppercase font-bold tracking-wider bg-indigo-500/10 border border-indigo-500/20 inline-block px-2 py-1 rounded">
+                <p className="text-indigo-300 text-[8px] sm:text-[10px] uppercase font-bold tracking-wider bg-indigo-500/10 border border-indigo-500/20 inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 rounded truncate max-w-full">
                   ★ {stat.model}
                 </p>
               </div>
-              {/* Background watermark */}
               <div className="absolute -bottom-4 -right-4 text-white/3 pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                <BarChart size={100} />
+                <BarChart size={80} className="sm:w-25 sm:h-25]" />
               </div>
             </div>
           ))}
@@ -160,18 +160,19 @@ const EvaluationResults = () => {
 
       {/* DETAILED METRICS MATRIX */}
       <div>
-        <h2 className="text-sm font-mono text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <h2 className="text-xs sm:text-sm font-mono text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 bg-indigo-500 rounded-sm animate-pulse"></span>
           Model Telemetry Matrix
         </h2>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* MODIFIED: grid-cols-2 on mobile by default */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
           {metricsData.map((row) => {
             const theme = getThemeColor(row.name);
 
             const cardStyle =
               theme === "indigo"
-                ? "bg-gradient-to-r from-indigo-900/20 to-[#080c17] border-indigo-500/40 shadow-[0_0_20px_rgba(79,70,229,0.1)] scale-[1.02]"
+                ? "bg-gradient-to-r from-indigo-900/20 to-[#080c17] border-indigo-500/40 shadow-[0_0_20px_rgba(79,70,229,0.1)] lg:scale-[1.02]"
                 : theme === "teal"
                   ? "bg-gradient-to-r from-teal-900/10 to-[#080c17] border-teal-500/20"
                   : "bg-gradient-to-r from-slate-900/30 to-[#080c17] border-slate-700/50";
@@ -192,50 +193,64 @@ const EvaluationResults = () => {
             return (
               <div
                 key={row.id}
-                className={`rounded-2xl border p-6 flex flex-col justify-between transition-all ${cardStyle}`}
+                // MODIFIED: Reduced padding on mobile (p-3 sm:p-6)
+                className={`rounded-xl sm:rounded-2xl border p-3 sm:p-6 flex flex-col justify-between transition-all ${cardStyle}`}
               >
-                {/* Card Header */}
-                <div className="flex justify-between items-start mb-6 border-b border-gray-800/50 pb-4">
-                  <div>
+                {/* MODIFIED Card Header: Stack vertically on mobile, row on large screens */}
+                <div className="flex flex-col lg:flex-row justify-between items-start mb-4 sm:mb-6 border-b border-gray-800/50 pb-3 sm:pb-4 gap-2 lg:gap-0">
+                  <div className="w-full">
                     <h3
-                      className={`text-xl font-bold tracking-wide mb-1 ${textColor}`}
+                      className={`text-sm sm:text-xl font-bold tracking-wide mb-1 truncate ${textColor}`}
                     >
                       {row.name}
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${barColor}`}
                       ></span>
-                      <span className="text-xs font-mono uppercase tracking-widest text-gray-500">
+                      <span className="text-[9px] sm:text-xs font-mono uppercase tracking-widest text-gray-500">
                         {row.status}
                       </span>
                     </div>
                   </div>
 
                   {/* F1 Hero Metric */}
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">
+                  <div className="text-left lg:text-right mt-1 lg:mt-0">
+                    <p className="text-[8px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-0 sm:mb-1">
                       Overall F1
                     </p>
-                    <p className={`text-2xl font-mono font-bold ${textColor}`}>
+                    <p
+                      className={`text-lg sm:text-2xl font-mono font-bold ${textColor}`}
+                    >
                       {row.f1}
                     </p>
                   </div>
                 </div>
 
                 {/* Progress Bars for Metrics */}
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {[
                     { label: "Accuracy", value: row.accuracy },
                     { label: "Precision", value: row.precision },
                     { label: "Recall", value: row.recall },
                   ].map((metric, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="w-20 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                        {metric.label}
+                    // MODIFIED: Stacks the label and the bar on mobile to save width
+                    <div
+                      key={i}
+                      className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4"
+                    >
+                      {/* Mobile Label & Value row */}
+                      <div className="flex justify-between items-center sm:w-20">
+                        <span className="text-[8px] sm:text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                          {metric.label}
+                        </span>
+                        {/* Show value here on mobile only */}
+                        <span className="text-[9px] font-mono text-gray-300 sm:hidden">
+                          {metric.value}
+                        </span>
                       </div>
-                      <div className="flex-1 h-2 bg-gray-900 rounded-full overflow-hidden border border-gray-800 relative">
-                        {/* The actual progress bar */}
+
+                      <div className="flex-1 h-1.5 sm:h-2 bg-gray-900 rounded-full overflow-hidden border border-gray-800 relative w-full">
                         <div
                           className={`absolute top-0 left-0 h-full rounded-full ${barColor} shadow-[0_0_10px_currentColor]`}
                           style={{
@@ -243,7 +258,9 @@ const EvaluationResults = () => {
                           }}
                         ></div>
                       </div>
-                      <div className="w-12 text-right text-xs font-mono text-gray-300">
+
+                      {/* Show value here on desktop only */}
+                      <div className="hidden sm:block w-12 text-right text-xs font-mono text-gray-300">
                         {metric.value}
                       </div>
                     </div>
