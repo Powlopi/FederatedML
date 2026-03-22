@@ -79,7 +79,7 @@ const CentralHub = () => {
       );
       if (res.data.status === "success") {
         setRetrievalStatus(
-          `Success: Hospital ${campusId} model retrieved and saved locally on the central hub.`,
+          `Success: Campus ${campusId} model retrieved and saved locally on the central hub.`,
         );
         if (campusId === "1") setRetrievedCampus1(true);
         if (campusId === "2") setRetrievedCampus2(true);
