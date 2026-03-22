@@ -12,7 +12,7 @@ const EvaluationResults = () => {
       try {
         setIsLoading(true);
         const res = await axios.get(
-          "http://main-hub-production-38c4.up.railway.app/api/metrics",
+          "https://main-hub-production-38c4.up.railway.app/api/metrics",
         );
         setMetricsData(res.data);
         setError(null);
@@ -53,6 +53,15 @@ const EvaluationResults = () => {
     if (name.includes("Campus")) return "teal";
     return "slate";
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-indigo-400">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mr-3"></div>
+        Fetching Telemetry Data...
+      </div>
+    );
+  }
 
   if (error) {
     return (
