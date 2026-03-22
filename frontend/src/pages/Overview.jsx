@@ -48,17 +48,6 @@ const Overview = () => {
 
     refreshData();
 
-    // Optional: Refresh every 30 seconds automatically
-    const interval = setInterval(refreshData, 30000);
-
-    // Optional: Refresh when the user clicks back onto the tab
-    window.addEventListener("focus", refreshData);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("focus", refreshData);
-    };
-
     // 2. Fetch Global Metrics from Central Hub
     const fetchGlobalMetrics = async () => {
       try {
@@ -89,6 +78,17 @@ const Overview = () => {
 
     checkStatuses();
     fetchGlobalMetrics();
+
+    // Optional: Refresh every 30 seconds automatically
+    const interval = setInterval(refreshData, 30000);
+
+    // Optional: Refresh when the user clicks back onto the tab
+    window.addEventListener("focus", refreshData);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refreshData);
+    };
   }, []);
 
   // Helper to determine if a node is online for styling the network map
