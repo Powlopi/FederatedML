@@ -116,33 +116,37 @@ const CentralHub = () => {
 
       setAggregationLogs((prev) => [...prev, `[SUCCESS] ${res.data.message}`]);
 
-      // 2. NEW: Trigger a Global Evaluation immediately!
+      // 2. Trigger Global Evaluation via the correct GET endpoint
       setAggregationLogs((prev) => [
         ...prev,
         `${getTimestamp()} >> Re-evaluating Global Model...`,
       ]);
 
-      // We call the evaluate endpoint with a sample size (e.g., 100)
-      const evalRes = await axios.post(
-        "https://main-hub-production-38c4.up.railway.app/api/evaluate_global",
-        {
-          sample_size: 100,
-        },
+      const evalRes = await axios.get(
+        "https://main-hub-production-38c4.up.railway.app/api/global_metrics",
       );
 
       if (evalRes.data.status === "success") {
-        const m = evalRes.data.global_metrics;
+        // app.py returns accuracy and f1 directly on the data object
+        const m = evalRes.data;
         setAggregationLogs((prev) => [
           ...prev,
           `[METRICS UPDATED] Accuracy: ${(m.accuracy * 100).toFixed(2)}% | F1: ${m.f1.toFixed(4)}`,
+        ]);
+      } else {
+        setAggregationLogs((prev) => [
+          ...prev,
+          `[ERROR] Metrics failed: ${evalRes.data.message}`,
         ]);
       }
 
       setIsAggregating(false);
     } catch (err) {
+      // Safely handle errors without calling undefined variables
+      const errorMessage = err.response?.data?.message || err.message;
       setAggregationLogs((prev) => [
         ...prev,
-        `${getTimestamp()} >> [SUCCESS] ${res.data.message}`,
+        `${getTimestamp()} >> [ERROR] Aggregation Failed: ${errorMessage}`,
       ]);
       setIsAggregating(false);
     }

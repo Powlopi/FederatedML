@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Icons } from "../components/Icons";
 import StatusBadge from "../components/StatusBadge";
@@ -11,87 +11,78 @@ const Overview = () => {
   });
 
   const [metrics, setMetrics] = useState({
-    version: "RFC v1.0",
+    version: "RFC Latest",
     accuracy: "--",
     f1: "--",
     lastSync: "Checking...",
   });
 
-  useEffect(() => {
-    // 1. Check Node Statuses
-    const checkStatuses = async () => {
-      // Replace these strings with your ACTUAL Railway Public URLs
-      const nodes = {
-        main: import.meta.env.VITE_MAIN_HUB_URL,
-        campus1: import.meta.env.VITE_CAMPUS_1_URL,
-        campus2: import.meta.env.VITE_CAMPUS_2_URL,
-      };
+  // Wrapped in useCallback so we can safely use it inside useEffect
+  const fetchGlobalMetrics = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_MAIN_HUB_URL}/api/global_metrics`,
+      );
+      if (res.data && res.data.status === "success") {
+        const acc = res.data.accuracy;
+        const f1 = res.data.f1;
 
-      for (const [key, url] of Object.entries(nodes)) {
-        try {
-          // We call the URL + the status endpoint
-          await axios.get(`${url}/api/status`);
-          setStatuses((prev) => ({ ...prev, [key]: "Online" }));
-        } catch (error) {
-          console.error(`Error checking ${key}:`, error);
-          setStatuses((prev) => ({ ...prev, [key]: "Offline" }));
-        }
+        setMetrics({
+          version: res.data.version || "RFC Latest",
+          accuracy: acc
+            ? acc <= 1
+              ? (acc * 100).toFixed(2) + "%"
+              : acc + "%"
+            : "--",
+          f1: f1 ? parseFloat(f1).toFixed(2) : "--",
+          lastSync: res.data.last_sync || "Unknown",
+        });
       }
+    } catch (err) {
+      console.log(
+        "Could not fetch global metrics. Hub might be offline or model is untrained.",
+        err,
+      );
+    }
+  }, []);
+
+  const checkStatuses = useCallback(async () => {
+    const nodes = {
+      main: import.meta.env.VITE_MAIN_HUB_URL,
+      campus1: import.meta.env.VITE_CAMPUS_1_URL,
+      campus2: import.meta.env.VITE_CAMPUS_2_URL,
     };
 
-    checkStatuses();
+    for (const [key, url] of Object.entries(nodes)) {
+      try {
+        await axios.get(`${url}/api/status`);
+        setStatuses((prev) => ({ ...prev, [key]: "Online" }));
+      } catch (error) {
+        console.error(`Error checking ${key}:`, error);
+        setStatuses((prev) => ({ ...prev, [key]: "Offline" }));
+      }
+    }
+  }, []);
 
+  useEffect(() => {
     const refreshData = async () => {
       await checkStatuses();
       await fetchGlobalMetrics();
     };
 
+    // Initial Load (Only called once now)
     refreshData();
 
-    // 2. Fetch Global Metrics from Central Hub
-    const fetchGlobalMetrics = async () => {
-      try {
-        const res = await axios.get(
-          "https://main-hub-production-38c4.up.railway.app/api/global_metrics",
-        );
-        if (res.data && res.data.status === "success") {
-          const acc = res.data.accuracy;
-          const f1 = res.data.f1;
-
-          setMetrics({
-            version: res.data.version || "RFC Latest",
-            accuracy: acc
-              ? acc <= 1
-                ? (acc * 100).toFixed(2) + "%"
-                : acc + "%"
-              : "--",
-            f1: f1 ? parseFloat(f1).toFixed(2) : "--",
-            lastSync: res.data.last_sync || "Unknown",
-          });
-        }
-      } catch (err) {
-        console.log(
-          "Could not fetch global metrics. Hub might be offline or model is untrained.",
-        );
-      }
-    };
-
-    checkStatuses();
-    fetchGlobalMetrics();
-
-    // Optional: Refresh every 30 seconds automatically
+    // Set Intervals and Listeners
     const interval = setInterval(refreshData, 30000);
-
-    // Optional: Refresh when the user clicks back onto the tab
     window.addEventListener("focus", refreshData);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener("focus", refreshData);
     };
-  }, []);
+  }, [checkStatuses, fetchGlobalMetrics]);
 
-  // Helper to determine if a node is online for styling the network map
   const isOnline = (status) => status === "Online";
 
   return (
@@ -151,7 +142,6 @@ const Overview = () => {
               <span className="text-emerald-400 text-xs font-bold">↑</span>
             )}
           </div>
-          {/* Faux Sparkline for visual effect */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-blue-600 to-indigo-500 opacity-50"></div>
         </div>
 
@@ -186,8 +176,8 @@ const Overview = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* NETWORK TOPOLOGY VISUALIZATION (Replacing the generic static display) */}
-        <div className="lg:col-span-2 bg-[#080c17] border border-indigo-900/30 rounded-2xl p-6 relative shadow-inner flex flex-col min-h-100">
+        {/* NETWORK TOPOLOGY VISUALIZATION */}
+        <div className="lg:col-span-2 bg-[#080c17] border border-indigo-900/30 rounded-2xl p-6 relative shadow-inner flex flex-col min-h-87.5">
           <h2 className="text-lg font-semibold text-gray-100 mb-2 flex items-center gap-2 relative z-10">
             <Icons.Server className="text-indigo-400" /> Network Topology
           </h2>
@@ -196,15 +186,19 @@ const Overview = () => {
           </p>
 
           <div className="flex-1 flex flex-col items-center justify-center relative w-full mt-4">
-            {/* Connecting Lines (SVG) */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+            {/* Connecting Lines (SVG) - FIXED FOR CONSOLE ERRORS */}
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="absolute inset-0 w-full h-full pointer-events-none z-0"
+            >
               {/* Central to Campus 1 */}
               <path
-                d="M 50% 15% C 30% 40%, 25% 60%, 25% 75%"
+                d="M 50 15 C 30 40, 25 60, 25 75"
                 fill="none"
                 stroke={isOnline(statuses.campus1) ? "#4f46e5" : "#1f2937"}
-                strokeWidth="2"
-                strokeDasharray={isOnline(statuses.campus1) ? "6 6" : "none"}
+                strokeWidth="0.5"
+                strokeDasharray={isOnline(statuses.campus1) ? "2 2" : "none"}
                 className={
                   isOnline(statuses.campus1)
                     ? "animate-[dash_20s_linear_infinite]"
@@ -213,11 +207,11 @@ const Overview = () => {
               />
               {/* Central to Campus 2 */}
               <path
-                d="M 50% 15% C 70% 40%, 75% 60%, 75% 75%"
+                d="M 50 15 C 70 40, 75 60, 75 75"
                 fill="none"
                 stroke={isOnline(statuses.campus2) ? "#4f46e5" : "#1f2937"}
-                strokeWidth="2"
-                strokeDasharray={isOnline(statuses.campus2) ? "6 6" : "none"}
+                strokeWidth="0.5"
+                strokeDasharray={isOnline(statuses.campus2) ? "2 2" : "none"}
                 className={
                   isOnline(statuses.campus2)
                     ? "animate-[dash_20s_linear_infinite]"
@@ -243,7 +237,7 @@ const Overview = () => {
                 Central Model
               </h3>
               <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
-                Port 5000
+                Node: Railway - Main-Hub
               </p>
               <StatusBadge status={statuses.main} />
             </div>
@@ -267,7 +261,7 @@ const Overview = () => {
                   Campus 1
                 </h3>
                 <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
-                  Port 5001
+                  Node: Railway - Campus-1
                 </p>
                 <StatusBadge status={statuses.campus1} />
               </div>
@@ -289,7 +283,7 @@ const Overview = () => {
                   Campus 2
                 </h3>
                 <p className="text-[10px] text-gray-500 font-mono mb-2 bg-[#080c17] px-2">
-                  Port 5002
+                  Node: Railway - Campus-2
                 </p>
                 <StatusBadge status={statuses.campus2} />
               </div>
@@ -344,7 +338,6 @@ const Overview = () => {
         </div>
       </div>
 
-      {/* Required CSS for the dashed line animation on the network map */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
