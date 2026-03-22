@@ -155,10 +155,8 @@ def get_global_metrics():
         f1 = f1_score(y_test, predictions, average='weighted')
 
         timestamp = os.path.getmtime(GLOBAL_MODEL_PATH)
-        dt_utc = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
-        pht_timezone = datetime.timezone(datetime.timedelta(hours=8))
-        dt_local = dt_utc.astimezone(pht_timezone)
-        formatted_time = dt_local.strftime("%B %d, %Y • %I:%M %p")
+        dt_object = datetime.datetime.fromtimestamp(timestamp)
+        formatted_time = dt_object.strftime("%B %d, %Y • %I:%M %p")
 
         return jsonify({
             "status": "success", 
