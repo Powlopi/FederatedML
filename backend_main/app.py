@@ -12,13 +12,36 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 app = Flask(__name__)
 CORS(app)
 
-# --- DIRECTORY CONFIG ---
+# --- DIRECTORY & PERSISTENCE CONFIG ---
+# We point this to a generic 'models' folder, but you MUST mount a volume here in Railway
 MODELS_DIR = os.path.join(os.getcwd(), 'models')
 os.makedirs(MODELS_DIR, exist_ok=True)
 
+# Generic filenames so they can be safely overwritten each round
 LOCAL_MODEL_1_PATH = os.path.join(MODELS_DIR, 'local_model_campus1.pkl')
 LOCAL_MODEL_2_PATH = os.path.join(MODELS_DIR, 'local_model_campus2.pkl')
-GLOBAL_MODEL_PATH = os.path.join(MODELS_DIR, 'main_model_v2.pkl')
+GLOBAL_MODEL_PATH = os.path.join(MODELS_DIR, 'main_model_latest.pkl')
+
+# A simple text file to keep track of what round we are on
+VERSION_FILE = os.path.join(MODELS_DIR, 'model_version.txt')
+
+def get_current_version():
+    """Reads the current round number safely."""
+    if os.path.exists(VERSION_FILE):
+        try:
+            with open(VERSION_FILE, 'r') as f:
+                return int(f.read().strip())
+        except:
+            pass
+    return 2 # Defaults to 2 so your current UI state doesn't break
+
+def increment_version():
+    """Adds +1 to the version after a successful aggregation."""
+    current = get_current_version()
+    new_version = current + 1
+    with open(VERSION_FILE, 'w') as f:
+        f.write(str(new_version))
+    return new_version
 
 # --- CAMPUS NETWORKING CONFIG ---
 CAMPUS_1_URL = os.getenv("CAMPUS_1_URL", "https://campus-1-production-a396.up.railway.app")
@@ -29,7 +52,7 @@ CAMPUS_2_URL = os.getenv("CAMPUS_2_URL", "https://campus-2-production-e54d.up.ra
 def get_status():
     return jsonify({
         "status": "Online", 
-        "message": "Aggregation Hub Active",
+        "message": f"Aggregation Hub Active (Round {get_current_version()})",
         "models_present": {
             "campus1": os.path.exists(LOCAL_MODEL_1_PATH),
             "campus2": os.path.exists(LOCAL_MODEL_2_PATH),
@@ -40,27 +63,23 @@ def get_status():
 # --- MODEL RETRIEVAL ROUTE (PULL) ---
 @app.route('/api/retrieve_local_model/<campus_id>', methods=['GET'])
 def retrieve_local_model(campus_id):
-    
     url_map = {"1": CAMPUS_1_URL, "2": CAMPUS_2_URL}
     path_map = {"1": LOCAL_MODEL_1_PATH, "2": LOCAL_MODEL_2_PATH}
     
     if campus_id not in url_map:
         return jsonify({"status": "error", "message": "Invalid Campus ID"}), 400
     
-    
     campus_endpoint = f"{url_map[campus_id]}/api/download_model"
     local_save_path = path_map[campus_id]
 
     try:
         response = requests.get(campus_endpoint)
-        
         if response.status_code == 200:
             with open(local_save_path, 'wb') as f:
                 f.write(response.content)
             return jsonify({"status": "success", "message": f"Successfully retrieved local model for Campus {campus_id}."}), 200
         else:
             return jsonify({"status": "error", "message": f"Failed to retrieve model from {campus_endpoint}."}), 500
-            
     except Exception as e:
         return jsonify({"status": "error", "message": f"Network Error contacting Campus {campus_id}: {str(e)}"}), 500
 
@@ -79,7 +98,14 @@ def aggregate_models():
     if not (os.path.exists(LOCAL_MODEL_1_PATH) and os.path.exists(LOCAL_MODEL_2_PATH)):
         return jsonify({"status": "error", "message": "Both models must be retrieved first."}), 400
 
+    # Pass the generic paths to your aggregation logic
     result = create_aggregated_model(LOCAL_MODEL_1_PATH, LOCAL_MODEL_2_PATH, GLOBAL_MODEL_PATH)
+    
+    # If successful, increment the round!
+    if result.get("status") == "success":
+        new_v = increment_version()
+        result["message"] = f"Successfully generated model v{new_v}"
+
     return jsonify(result), (200 if result["status"] == "success" else 500)
 
 @app.route('/api/metrics', methods=['GET'])
@@ -111,12 +137,13 @@ def get_all_metrics():
             }
 
         MAIN_MODEL_V1_PATH = os.path.join(os.getcwd(), 'main_model.pkl')
+        current_v = get_current_version()
 
         metrics_data = [
             evaluate_model(MAIN_MODEL_V1_PATH, 1, "Main Model v1", "Baseline"),
-            evaluate_model(LOCAL_MODEL_1_PATH, 2, "Campus-1 v2", "Local Node"),
-            evaluate_model(LOCAL_MODEL_2_PATH, 3, "Campus-2 v2", "Local Node"),
-            evaluate_model(GLOBAL_MODEL_PATH,  4, "Main Model v2", "Global Result")
+            evaluate_model(LOCAL_MODEL_1_PATH, 2, f"Campus-1 v{current_v}", "Local Node"),
+            evaluate_model(LOCAL_MODEL_2_PATH, 3, f"Campus-2 v{current_v}", "Local Node"),
+            evaluate_model(GLOBAL_MODEL_PATH,  4, f"Main Model v{current_v}", "Global Result")
         ]
         return jsonify(metrics_data), 200
     except Exception as e:
@@ -124,16 +151,16 @@ def get_all_metrics():
 
 @app.route('/api/global_metrics', methods=['GET'])
 def get_global_metrics():
-    # Check if model exists
     if not os.path.exists(GLOBAL_MODEL_PATH):
         return jsonify({"status": "error", "message": "Global model not found."}), 404
 
-    # Check if test data exists
     test_data_path = os.path.join(os.getcwd(), 'global_test.csv') 
+    current_v = get_current_version()
+
     if not os.path.exists(test_data_path):
         return jsonify({
             "status": "success", 
-            "version": "RFC v2.0", 
+            "version": f"RFC v{current_v}.0", 
             "accuracy": 0.0, 
             "f1": 0.0,
             "message": "No test data found."
@@ -141,15 +168,12 @@ def get_global_metrics():
 
     try:
         model = joblib.load(GLOBAL_MODEL_PATH, mmap_mode=None)
-        
         df = pd.read_csv(test_data_path)
-        
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         
         X_test = df.iloc[:, :-1]
         y_test = df.iloc[:, -1]
 
-        #Calculate Metrics
         predictions = model.predict(X_test)
         acc = accuracy_score(y_test, predictions)
         f1 = f1_score(y_test, predictions, average='weighted')
@@ -162,7 +186,7 @@ def get_global_metrics():
 
         return jsonify({
             "status": "success", 
-            "version": "RFC v2.0", 
+            "version": f"RFC v{current_v}.0", 
             "accuracy": float(acc),
             "f1": float(f1), 
             "last_sync": formatted_time
