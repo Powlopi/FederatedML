@@ -13,8 +13,8 @@ const CampusPage = ({
   const activeId = id || routeId;
 
   const CAMPUS_URLS = {
-    1: "https://campus-1-production.up.railway.app",
-    2: "https://campus-2-production.up.railway.app",
+    1: "https://campus-1-production-a396.up.railway.app",
+    2: "https://campus-2-production-e54d.up.railway.app",
   };
 
   const currentCampusUrl = CAMPUS_URLS[activeId] || CAMPUS_URLS["1"];
