@@ -12,7 +12,7 @@ const EvaluationResults = () => {
     try {
       setIsLoading(true);
       const res = await axios.get(
-        "https://main-hub-production-38c4.up.railway.app/api/metrics",
+        "https://main-hub-production-07dd.up.railway.app/api/metrics",
       );
       setMetricsData(res.data);
       setError(null);
