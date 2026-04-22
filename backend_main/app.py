@@ -7,6 +7,7 @@ import pandas as pd
 import pickle
 import joblib
 import datetime
+import shutil
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 app = Flask(__name__)
@@ -21,6 +22,9 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 LOCAL_MODEL_1_PATH = os.path.join(MODELS_DIR, 'local_model_campus1.pkl')
 LOCAL_MODEL_2_PATH = os.path.join(MODELS_DIR, 'local_model_campus2.pkl')
 GLOBAL_MODEL_PATH = os.path.join(MODELS_DIR, 'main_model_latest.pkl')
+
+if not os.path.exists(GLOBAL_MODEL_PATH) and os.path.exists('main_model.pkl'):
+    shutil.copy('main_model.pkl', GLOBAL_MODEL_PATH)
 
 # A simple text file to keep track of what round we are on
 VERSION_FILE = os.path.join(MODELS_DIR, 'model_version.txt')

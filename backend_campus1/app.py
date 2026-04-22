@@ -18,6 +18,9 @@ MODELS_DIR = os.path.join(os.getcwd(), 'models')
 os.makedirs(MODELS_DIR, exist_ok=True)
 GLOBAL_MODEL_SAVE_PATH = os.path.join(MODELS_DIR, 'main_model.pkl')
 
+if not os.path.exists(GLOBAL_MODEL_SAVE_PATH) and os.path.exists('campus_seed.pkl'):
+    shutil.copy('campus_seed.pkl', GLOBAL_MODEL_SAVE_PATH)
+
 # --- NETWORKING CONFIG ---
 MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "https://main-hub-production-07dd.up.railway.app")
 
