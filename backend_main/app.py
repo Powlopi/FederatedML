@@ -21,8 +21,8 @@ LOCAL_MODEL_2_PATH = os.path.join(MODELS_DIR, 'local_model_campus2.pkl')
 GLOBAL_MODEL_PATH = os.path.join(MODELS_DIR, 'main_model_v2.pkl')
 
 # --- CAMPUS NETWORKING CONFIG ---
-CAMPUS_1_URL = os.getenv("CAMPUS_1_URL", "https://campus-1-production.up.railway.app")
-CAMPUS_2_URL = os.getenv("CAMPUS_2_URL", "https://campus-2-production.up.railway.app")
+CAMPUS_1_URL = os.getenv("CAMPUS_1_URL", "https://campus-1-production-a396.up.railway.app")
+CAMPUS_2_URL = os.getenv("CAMPUS_2_URL", "https://campus-2-production-e54d.up.railway.app")
 
 # --- STATUS ROUTE ---
 @app.route('/api/status', methods=['GET'])

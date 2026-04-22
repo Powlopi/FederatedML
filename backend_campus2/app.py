@@ -19,7 +19,7 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 GLOBAL_MODEL_SAVE_PATH = os.path.join(MODELS_DIR, 'main_model.pkl')
 
 # --- NETWORKING CONFIG ---
-MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "https://main-hub-production-38c4.up.railway.app")
+MAIN_HUB_URL = os.getenv("MAIN_HUB_URL", "https://main-hub-production-07dd.up.railway.app")
 
 # --- HELPER: GET NEXT VERSION NUMBER ---
 def get_next_version():
