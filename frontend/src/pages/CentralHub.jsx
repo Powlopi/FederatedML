@@ -32,8 +32,8 @@ const CentralHub = () => {
       // A. Check Campus Nodes Status
       try {
         const campusUrls = {
-          campus1: "https://campus-1-production.up.railway.app",
-          campus2: "https://campus-2-production.up.railway.app",
+          campus1: "https://campus-1-production-a396.up.railway.app",
+          campus2: "https://campus-2-production-e54d.up.railway.app",
         };
 
         for (const [key, url] of Object.entries(campusUrls)) {
@@ -51,7 +51,7 @@ const CentralHub = () => {
       // B. Check Hub Status for existing files
       try {
         const hubRes = await axios.get(
-          "https://main-hub-production-38c4.up.railway.app/api/status",
+          "https://main-hub-production-07dd.up.railway.app/api/status",
         );
         if (hubRes.data && hubRes.data.models_present) {
           setHubModelsPresent({
@@ -75,7 +75,7 @@ const CentralHub = () => {
 
     try {
       const res = await axios.get(
-        `https://main-hub-production-38c4.up.railway.app/api/retrieve_local_model/${campusId}`,
+        `https://main-hub-production-07dd.up.railway.app/api/retrieve_local_model/${campusId}`,
       );
       if (res.data.status === "success") {
         setRetrievalStatus(
@@ -111,7 +111,7 @@ const CentralHub = () => {
     try {
       // 1. Run the Aggregation
       const res = await axios.get(
-        "https://main-hub-production-38c4.up.railway.app/api/aggregate_models",
+        "https://main-hub-production-07dd.up.railway.app/api/aggregate_models",
       );
 
       setAggregationLogs((prev) => [...prev, `[SUCCESS] ${res.data.message}`]);
@@ -123,7 +123,7 @@ const CentralHub = () => {
       ]);
 
       const evalRes = await axios.get(
-        "https://main-hub-production-38c4.up.railway.app/api/global_metrics",
+        "https://main-hub-production-07dd.up.railway.app/api/global_metrics",
       );
 
       if (evalRes.data.status === "success") {
